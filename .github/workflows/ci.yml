@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      - name: Smoke-test packed CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          tarball="$(find release/npm -maxdepth 1 -name '*.tgz' -print -quit)"
+          install_root="$(mktemp -d)"
+          npm install --global --prefix "$install_root" "$tarball"
+          "$install_root/bin/cobalt" --version
+          "$install_root/bin/cobalt" completion bash >/dev/null

@@ -1,0 +1,4984 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Cobalt External API",
+    "version": "v1"
+  },
+  "paths": {
+    "/v1/workspaces": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ListWorkspaces",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfWorkspaceSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/repositories": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ListRepositories",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfRepositorySummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/agent-accounts": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ListAgentAccounts",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfAgentAccountSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/tasks": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ListTasks",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "repositoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "createdByMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfTaskSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "CreateTask",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A non-empty UUID that makes this mutation safe to retry.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "description": "The relative External API URL of the accepted task.",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateTaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read",
+              "cobaltcode.external.create"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/tasks/search": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "SearchTasks",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfTaskSearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/workspaces/{workspaceId}/task-messages/search": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "SearchTaskMessages",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfMessageSearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "GetTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/messages": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ListTaskMessages",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResponseOfTaskMessageSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "SendTaskMessage",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A non-empty UUID that makes this mutation safe to retry.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read",
+              "cobaltcode.external.operate"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/events": {
+      "get": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ListTaskEvents",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "afterSequence",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int64"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskEventPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/messages/{messageId}/steer": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "SteerTaskMessage",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A non-empty UUID that makes this mutation safe to retry.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyMutationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SteerMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read",
+              "cobaltcode.external.operate"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/turn/cancel": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "CancelTaskTurn",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A non-empty UUID that makes this mutation safe to retry.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyMutationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTurnResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read",
+              "cobaltcode.external.operate"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/suspend": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "SuspendTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A non-empty UUID that makes this mutation safe to retry.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmptyMutationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecycleOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read",
+              "cobaltcode.external.operate"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/{taskId}/resume": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "ResumeTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A non-empty UUID that makes this mutation safe to retry.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifecycleOperationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "headers": {
+              "Cobalt-Idempotency-Outcome": {
+                "description": "The product idempotency outcome when one is available for this response.",
+                "schema": {
+                  "enum": [
+                    "created",
+                    "recovered",
+                    "replay",
+                    "conflict",
+                    "in_progress"
+                  ],
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read",
+              "cobaltcode.external.operate"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    },
+    "/v1/tasks/wait": {
+      "post": {
+        "tags": [
+          "Cobalt External API"
+        ],
+        "operationId": "WaitForTasks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitForTasksRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitForTasksResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExternalApiProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "CobaltOAuth": [
+              "cobaltcode.external.read"
+            ]
+          },
+          {
+            "CobaltApiCredential": [ ]
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentAccountSummary": {
+        "required": [
+          "id",
+          "label",
+          "agentKind",
+          "pluginId",
+          "status",
+          "isDefault",
+          "models",
+          "defaultModel",
+          "attention"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "agentKind": {
+            "type": "string"
+          },
+          "pluginId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "boolean"
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentModelSummary"
+            }
+          },
+          "defaultModel": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "attention": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AttentionSummary"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentModelSummary": {
+        "required": [
+          "id",
+          "label",
+          "reasoningEfforts",
+          "defaultReasoningEffort"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "reasoningEfforts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultReasoningEffort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentSelection": {
+        "required": [
+          "accountId"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reasoningEffort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AttentionSummary": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "action": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CancelTurnResponse": {
+        "required": [
+          "taskId",
+          "status",
+          "partialChangesMayRemain",
+          "lastEventSequence",
+          "acceptedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "partialChangesMayRemain": {
+            "type": "boolean"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutIssueReference": {
+        "required": [
+          "sourceId",
+          "externalId",
+          "locator"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CheckoutSource": {
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "webUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "issue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CheckoutIssueReference"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTaskCheckout": {
+        "required": [
+          "repositoryId",
+          "isActive",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "repositoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "source": {
+            "$ref": "#/components/schemas/CheckoutSource"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTaskRequest": {
+        "required": [
+          "message",
+          "agent"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "agent": {
+            "$ref": "#/components/schemas/AgentSelection"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "visibility": {
+            "type": "string",
+            "default": "workspace"
+          },
+          "retentionMode": {
+            "type": "string",
+            "default": "ephemeral"
+          },
+          "checkouts": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/CreateTaskCheckout"
+            }
+          },
+          "startingPoint": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskStartingPoint"
+              }
+            ]
+          },
+          "cpuCores": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "memoryGb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateTaskResponse": {
+        "required": [
+          "taskId",
+          "status",
+          "operationInProgress",
+          "lastEventSequence",
+          "acceptedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "operationInProgress": {
+            "type": "boolean"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EmptyMutationRequest": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "ExternalApiProblemDetails": {
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "instance",
+          "code",
+          "retryable",
+          "traceId",
+          "details"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "traceId": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacetSummary": {
+        "required": [
+          "id",
+          "key",
+          "value",
+          "source",
+          "url",
+          "removable"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "removable": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LifecycleOperationResponse": {
+        "required": [
+          "taskId",
+          "status",
+          "operationInProgress",
+          "lastEventSequence",
+          "acceptedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "operationInProgress": {
+            "type": "boolean"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MessageSearchExcerpt": {
+        "required": [
+          "text",
+          "highlighted"
+        ],
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "highlighted": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MessageSearchRequest": {
+        "required": [
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "cursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "MessageSearchResult": {
+        "required": [
+          "messageId",
+          "taskId",
+          "taskTitle",
+          "targetView",
+          "role",
+          "author",
+          "createdAt",
+          "repository",
+          "excerpt"
+        ],
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskTitle": {
+            "type": "string"
+          },
+          "targetView": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "excerpt": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageSearchExcerpt"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfAgentAccountSummary": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentAccountSummary"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfMessageSearchResult": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageSearchResult"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfRepositorySummary": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepositorySummary"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfTaskMessageSummary": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskMessageSummary"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfTaskSearchResult": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskSearchResult"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfTaskSummary": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskSummary"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PageResponseOfWorkspaceSummary": {
+        "required": [
+          "items",
+          "hasMore",
+          "nextCursor"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceSummary"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextCursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "RepositorySummary": {
+        "required": [
+          "id",
+          "displayName",
+          "provider",
+          "pluginId",
+          "defaultBranch",
+          "status",
+          "taskEligible",
+          "attention"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "pluginId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "defaultBranch": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "taskEligible": {
+            "type": "boolean"
+          },
+          "attention": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AttentionSummary"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResumeTaskRequest": {
+        "type": "object",
+        "properties": {
+          "agent": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentSelection"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SearchRequest": {
+        "required": [
+          "query"
+        ],
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          },
+          "limit": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "cursor": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SendMessageRequest": {
+        "required": [
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "agent": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AgentSelection"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SendMessageResponse": {
+        "required": [
+          "taskId",
+          "messageId",
+          "sequence",
+          "status",
+          "createdAt",
+          "lastEventSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SteerMessageResponse": {
+        "required": [
+          "taskId",
+          "messageId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskCheckoutSummary": {
+        "required": [
+          "checkoutId",
+          "repositoryId",
+          "repository",
+          "isActive",
+          "status",
+          "branch"
+        ],
+        "type": "object",
+        "properties": {
+          "checkoutId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repositoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "branch": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskDetail": {
+        "required": [
+          "id",
+          "title",
+          "workspaceId",
+          "visibility",
+          "status",
+          "agentAccountId",
+          "agentKind",
+          "model",
+          "reasoningEffort",
+          "operationInProgress",
+          "currentOperation",
+          "createdByMe",
+          "lastActivityAt",
+          "lastEventSequence",
+          "lastMessageSequence",
+          "autoWakeOnResume",
+          "retentionMode",
+          "expiresAt",
+          "expiredAt",
+          "activeCheckoutId",
+          "checkouts",
+          "facets",
+          "capabilities",
+          "actions",
+          "guidance"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "agentAccountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "agentKind": {
+            "type": "string"
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reasoningEffort": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "operationInProgress": {
+            "type": "boolean"
+          },
+          "currentOperation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskOperationSummary"
+              }
+            ]
+          },
+          "createdByMe": {
+            "type": "boolean"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "lastMessageSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "autoWakeOnResume": {
+            "type": "boolean"
+          },
+          "retentionMode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "expiredAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "activeCheckoutId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "checkouts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskCheckoutSummary"
+            }
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetSummary"
+            }
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guidance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskEvent": {
+        "required": [
+          "sequence",
+          "eventType",
+          "payload",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/TaskEventPayload"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskEventPage": {
+        "required": [
+          "items",
+          "hasMore",
+          "highWaterMark"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskEvent"
+            }
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "highWaterMark": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskEventPayload": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "kind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "code": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "messageId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskMessageSummary": {
+        "required": [
+          "messageId",
+          "sequence",
+          "role",
+          "author",
+          "content",
+          "contentTruncated",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "createdByMe"
+        ],
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "role": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "contentTruncated": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByMe": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskOperationSummary": {
+        "required": [
+          "kind",
+          "status",
+          "acceptedAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "acceptedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskSearchResult": {
+        "required": [
+          "taskId",
+          "title",
+          "repository",
+          "status",
+          "visibility",
+          "targetView",
+          "lastActivityAt",
+          "facets"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "targetView": {
+            "type": "string"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetSummary"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskStartingPoint": {
+        "required": [
+          "pluginId",
+          "sourceId",
+          "subjectKind",
+          "externalId",
+          "locator",
+          "checkoutRepositoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "pluginId": {
+            "type": "string"
+          },
+          "sourceId": {
+            "type": "string"
+          },
+          "subjectKind": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "checkoutRepositoryId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TaskSummary": {
+        "required": [
+          "id",
+          "title",
+          "workspaceId",
+          "visibility",
+          "status",
+          "agentKind",
+          "operationInProgress",
+          "createdByMe",
+          "lastActivityAt",
+          "lastEventSequence",
+          "retentionMode",
+          "expiresAt",
+          "checkouts",
+          "facets"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "agentKind": {
+            "type": "string"
+          },
+          "operationInProgress": {
+            "type": "boolean"
+          },
+          "createdByMe": {
+            "type": "boolean"
+          },
+          "lastActivityAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "retentionMode": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "checkouts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskCheckoutSummary"
+            }
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetSummary"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "WaitForTasksRequest": {
+        "required": [
+          "targets"
+        ],
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaitForTaskTarget"
+            }
+          },
+          "timeoutSeconds": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32",
+            "default": 15
+          }
+        },
+        "additionalProperties": false
+      },
+      "WaitForTasksResponse": {
+        "required": [
+          "timedOut",
+          "tasks"
+        ],
+        "type": "object",
+        "properties": {
+          "timedOut": {
+            "type": "boolean"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaitTaskSnapshot"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "WaitForTaskTarget": {
+        "required": [
+          "taskId",
+          "afterSequence"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "afterSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WaitTaskSnapshot": {
+        "required": [
+          "taskId",
+          "status",
+          "lastEventSequence",
+          "nextAfterSequence",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "taskId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "lastEventSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "nextAfterSequence": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskEvent"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "WorkspaceSummary": {
+        "required": [
+          "id",
+          "name",
+          "role",
+          "capabilities",
+          "defaultTaskCpuCores",
+          "defaultTaskMemoryGb",
+          "memberCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultTaskCpuCores": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "defaultTaskMemoryGb": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "memberCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "CobaltOAuth": {
+        "type": "oauth2",
+        "description": "A user-delegated Cobalt OAuth access token for this External API resource.",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://identity.test/connect/authorize",
+            "tokenUrl": "https://identity.test/connect/token",
+            "refreshUrl": "https://identity.test/connect/token",
+            "scopes": {
+              "cobaltcode.external.read": "Discover and inspect accessible Cobalt state.",
+              "cobaltcode.external.operate": "Change existing Cobalt tasks.",
+              "cobaltcode.external.create": "Create Cobalt tasks and consume workspace capacity."
+            }
+          }
+        }
+      },
+      "CobaltApiCredential": {
+        "type": "http",
+        "description": "A scoped Cobalt API credential sent as an HTTP Bearer token.",
+        "scheme": "bearer",
+        "bearerFormat": "cc_api_"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Cobalt External API"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+name: Release Cobalt CLI
+run-name: ${{ format('Release Cobalt CLI [{0}] {1} @ {2}', github.event_name == 'workflow_dispatch' && inputs.environment || 'dev', github.event_name == 'workflow_dispatch' && inputs.release_version || format('auto run {0}.{1}', github.run_number, github.run_attempt), github.ref_name) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: npm release channel
+        required: true
+        type: choice
+        options: [dev, demo, prod]
+        default: dev
+      release_version:
+        description: Required stable semver for prod; optional for prereleases
+        required: false
+        type: string
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      environment: ${{ steps.release.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: release
+        shell: bash
+        env:
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_VERSION: ${{ inputs.release_version }}
+        run: |
+          set -euo pipefail
+          channel="${INPUT_ENVIRONMENT:-dev}"
+          base="$(node -p "require('./package.json').version")"
+          if [ "$channel" = prod ]; then
+            if ! printf '%s' "$INPUT_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo 'A stable release_version is required for prod.' >&2
+              exit 1
+            fi
+            version="$INPUT_VERSION"
+            tag=latest
+          else
+            version="${INPUT_VERSION:-${base}-${channel}.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}}"
+            if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+              echo 'Dev and demo release versions must be semver.' >&2
+              exit 1
+            fi
+            tag="$channel"
+          fi
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "environment=$channel"
+          } >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+        env:
+          COBALT_CLI_PACKAGE_VERSION: ${{ needs.resolve.outputs.version }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cobalt-cli-${{ needs.resolve.outputs.version }}
+          path: |
+            release/npm/*.tgz
+            release/npm/package-metadata.json
+          if-no-files-found: error
+
+  publish:
+    needs: [resolve, package]
+    if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@v8
+        with:
+          name: cobalt-cli-${{ needs.resolve.outputs.version }}
+          path: package
+      - name: Publish with npm trusted publishing
+        env:
+          NPM_TAG: ${{ needs.resolve.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tarball="$(find package -name '*.tgz' -print -quit)"
+          npm publish "$tarball" --access public --tag "$NPM_TAG" --provenance
