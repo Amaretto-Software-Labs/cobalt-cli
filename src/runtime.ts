@@ -8,7 +8,11 @@ import {
 import { TokenProvider } from "./auth.js";
 import { ConfigStore, type CliConfig } from "./config.js";
 import type { CredentialStore } from "./credential-store.js";
-import { resolveEnvironment, type CobaltEnvironment } from "./environment.js";
+import {
+  configureEnvironmentTrust,
+  resolveEnvironment,
+  type CobaltEnvironment,
+} from "./environment.js";
 import { CliError, ExitCode, UsageError } from "./errors.js";
 import { Output, type OutputMode } from "./output.js";
 
@@ -54,6 +58,7 @@ export class Runtime {
         process.env.COBALT_ENVIRONMENT ??
         config.currentEnvironment,
     );
+    configureEnvironmentTrust(environment);
     const mode: OutputMode = options.json
       ? "json"
       : options.jsonl

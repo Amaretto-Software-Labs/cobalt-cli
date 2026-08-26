@@ -46,4 +46,26 @@ describe("ConfigStore", () => {
       ConfigurationError,
     );
   });
+
+  it("persists local workspace context independently", async () => {
+    const directory = await fs.mkdtemp(path.join(os.tmpdir(), "cobalt-cli-"));
+    directories.push(directory);
+    const store = new ConfigStore(path.join(directory, "config.json"));
+
+    await store.save({
+      schemaVersion: 1,
+      currentEnvironment: "local",
+      environments: {
+        local: {
+          workspaceId: "11111111-1111-4111-8111-111111111111",
+          workspaceName: "Local",
+        },
+      },
+    });
+
+    await expect(store.load()).resolves.toMatchObject({
+      currentEnvironment: "local",
+      environments: { local: { workspaceName: "Local" } },
+    });
+  });
 });
