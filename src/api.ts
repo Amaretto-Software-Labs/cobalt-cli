@@ -10,7 +10,7 @@ import {
 } from "./http.js";
 import { packageVersion } from "./version.js";
 
-const uuid = z.string().uuid();
+const guid = z.guid();
 const sequence = z.union([
   z.number().int().nonnegative().safe(),
   z
@@ -19,7 +19,7 @@ const sequence = z.union([
     .transform(Number)
     .pipe(z.number().int().nonnegative().safe()),
 ]);
-const entity = z.looseObject({ id: uuid });
+const entity = z.looseObject({ id: guid });
 export const workspaceSchema = entity.extend({
   name: z.string(),
   role: z.string(),
@@ -51,12 +51,12 @@ export const taskSummarySchema = entity.extend({
   lastEventSequence: sequence,
 });
 export const taskDetailSchema = taskSummarySchema.extend({
-  workspaceId: uuid,
+  workspaceId: guid,
   lastEventSequence: sequence,
   actions: z.array(z.string()).default([]),
 });
 export const messageSchema = z.looseObject({
-  messageId: uuid,
+  messageId: guid,
   sequence,
   author: z.string(),
   content: z.string(),
@@ -78,7 +78,7 @@ export const pageSchema = <T extends z.ZodType>(item: T) =>
     nextCursor: z.string().nullable().optional(),
   });
 const taskSearchSchema = z.looseObject({
-  taskId: uuid,
+  taskId: guid,
   title: z.string(),
   repository: z.string(),
   status: z.string(),
@@ -87,8 +87,8 @@ const taskSearchSchema = z.looseObject({
   lastActivityAt: z.string(),
 });
 const messageSearchSchema = z.looseObject({
-  messageId: uuid,
-  taskId: uuid,
+  messageId: guid,
+  taskId: guid,
   taskTitle: z.string(),
   targetView: z.string(),
   role: z.string(),
@@ -98,34 +98,34 @@ const messageSearchSchema = z.looseObject({
   excerpt: z.array(z.looseObject({ text: z.string() })),
 });
 const createTaskResponseSchema = z.looseObject({
-  taskId: uuid,
+  taskId: guid,
   status: z.string(),
   operationInProgress: z.boolean(),
   lastEventSequence: sequence,
   acceptedAt: z.string(),
 });
 const sendMessageResponseSchema = z.looseObject({
-  taskId: uuid,
-  messageId: uuid,
+  taskId: guid,
+  messageId: guid,
   sequence,
   status: z.string(),
   createdAt: z.string(),
   lastEventSequence: sequence,
 });
 const steerResponseSchema = z.looseObject({
-  taskId: uuid,
-  messageId: uuid,
+  taskId: guid,
+  messageId: guid,
   status: z.string(),
 });
 const cancelResponseSchema = z.looseObject({
-  taskId: uuid,
+  taskId: guid,
   status: z.string(),
   partialChangesMayRemain: z.boolean(),
   lastEventSequence: sequence,
   acceptedAt: z.string(),
 });
 const lifecycleResponseSchema = z.looseObject({
-  taskId: uuid,
+  taskId: guid,
   status: z.string(),
   operationInProgress: z.boolean(),
   lastEventSequence: sequence,
@@ -135,7 +135,7 @@ const waitResponseSchema = z.looseObject({
   timedOut: z.boolean(),
   tasks: z.array(
     z.looseObject({
-      taskId: uuid,
+      taskId: guid,
       status: z.string(),
       lastEventSequence: sequence,
       nextAfterSequence: sequence,
@@ -616,7 +616,7 @@ function withQuery(path: string, values: Record<string, unknown>): string {
 
 export function validId(value: string): string {
   if (
-    !z.string().uuid().safeParse(value).success ||
+    !guid.safeParse(value).success ||
     /^00000000-0000-0000-0000-000000000000$/i.test(value)
   )
     throw new CliError("ID must be a non-empty UUID.", ExitCode.usage);
