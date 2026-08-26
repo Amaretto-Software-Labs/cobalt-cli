@@ -1,6 +1,8 @@
 # Cobalt CLI
 
-The official open-source command-line client for [Cobalt](https://cobaltcode.ai). It talks only to the versioned Cobalt External API and is distributed as a normal npm package—there are no platform executables.
+The official open-source command-line client for Cobalt. It talks only to the versioned Cobalt External API and is distributed as a normal npm package—there are no platform executables.
+
+Website: [cobaltcode.ai](https://cobaltcode.ai) · Built by [Amaretto Software Labs](https://amarettosoftware.com)
 
 ## Install
 
