@@ -8,7 +8,7 @@ const uuid = z.string().uuid();
 const configSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
-    currentEnvironment: z.enum(["prod", "dev", "demo"]),
+    currentEnvironment: z.enum(["prod", "dev", "demo", "local"]),
     environments: z
       .record(
         z.string(),
@@ -18,7 +18,7 @@ const configSchema = z
   })
   .superRefine((value, context) => {
     for (const key of Object.keys(value.environments)) {
-      if (!["prod", "dev", "demo"].includes(key))
+      if (!["prod", "dev", "demo", "local"].includes(key))
         context.addIssue({
           code: "custom",
           message: `Unknown environment '${key}'.`,

@@ -33,7 +33,10 @@ export function createProgram(runtime: Runtime): Command {
     .version(packageVersion(), "-V, --version")
     .showHelpAfterError()
     .exitOverride()
-    .option("--environment <environment>", "Environment: prod, dev, or demo.")
+    .option(
+      "--environment <environment>",
+      "Environment: prod, dev, demo, or local.",
+    )
     .option("--workspace <workspace>", "Workspace UUID or exact name.")
     .option("--json", "Emit one JSON document.")
     .option("--jsonl", "Emit JSON Lines.")
@@ -1048,11 +1051,11 @@ complete -c cobalt -n '__fish_seen_subcommand_from auth' -a 'login logout status
 complete -c cobalt -n '__fish_seen_subcommand_from workspace' -a 'list use current'
 complete -c cobalt -n '__fish_seen_subcommand_from repo agent' -a 'list'
 complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'list get search create messages message-search events send steer cancel suspend resume wait follow open'
-complete -c cobalt -l environment -a 'prod dev demo'`;
+complete -c cobalt -l environment -a 'prod dev demo local'`;
   if (shell === "powershell")
     return `Register-ArgumentCompleter -Native -CommandName cobalt -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $words = @('interactive','auth','workspace','repo','agent','task','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','wait','follow','open','prod','dev','demo','bash','zsh','fish','powershell')
+  $words = @('interactive','auth','workspace','repo','agent','task','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','wait','follow','open','prod','dev','demo','local','bash','zsh','fish','powershell')
   $words | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { [System.Management.Automation.CompletionResult]::new($_,$_, 'ParameterValue', $_) }
 }`;
   return undefined;

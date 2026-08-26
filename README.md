@@ -33,7 +33,9 @@ cobalt task list --created-by-me
 cobalt task follow <task-id> --jsonl
 ```
 
-Environments are selected with `--environment prod|dev|demo` or `COBALT_ENVIRONMENT`. Select a workspace with `--workspace`, `COBALT_WORKSPACE`, or the saved per-environment workspace context.
+Environments are selected with `--environment prod|dev|demo|local` or `COBALT_ENVIRONMENT`. Select a workspace with `--workspace`, `COBALT_WORKSPACE`, or the saved per-environment workspace context.
+
+The `local` environment targets the standard Cobalt Aspire endpoints (`https://localhost:7295/v1`, `https://localhost:7270`, and `https://localhost:7250`) and reuses the development OAuth client registration. It adds the operating-system trust store to Node's default roots when the runtime supports that API. On older Node 22 builds, use `NODE_OPTIONS=--use-system-ca` after trusting the ASP.NET Core development certificate. Certificate verification remains enabled.
 
 ## Commands
 

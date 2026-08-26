@@ -1,7 +1,15 @@
+import tls from "node:tls";
 import { UsageError } from "./errors.js";
 
+type SystemTrustTls = typeof tls & {
+  getCACertificates?: (type?: "default" | "system") => string[];
+  setDefaultCACertificates?: (certificates: string[]) => void;
+};
+
+let systemTrustConfigured = false;
+
 export interface CobaltEnvironment {
-  name: "prod" | "dev" | "demo";
+  name: "prod" | "dev" | "demo" | "local";
   apiBase: URL;
   oauthResource: URL;
   identityIssuer: URL;
@@ -14,6 +22,7 @@ function create(
   api: string,
   issuer: string,
   frontend: string,
+  clientId = `cobalt-cli-${name}`,
 ): CobaltEnvironment {
   const apiBase = new URL(api);
   return {
@@ -22,7 +31,7 @@ function create(
     oauthResource: new URL(apiBase.origin),
     identityIssuer: new URL(issuer),
     webFrontend: new URL(frontend),
-    clientId: `cobalt-cli-${name}`,
+    clientId,
   };
 }
 
@@ -45,6 +54,13 @@ export const environments: readonly CobaltEnvironment[] = [
     "https://cobalt-identity.vasoftware.co.uk",
     "https://cobalt.vasoftware.co.uk",
   ),
+  create(
+    "local",
+    "https://localhost:7295/v1",
+    "https://localhost:7270",
+    "https://localhost:7250",
+    "cobalt-cli-dev",
+  ),
 ];
 
 export function resolveEnvironment(value?: string): CobaltEnvironment {
@@ -55,6 +71,23 @@ export function resolveEnvironment(value?: string): CobaltEnvironment {
   const name = value ?? "prod";
   const result = environments.find((item) => item.name === name.toLowerCase());
   if (!result)
-    throw new UsageError("Environment must be one of: prod, dev, demo.");
+    throw new UsageError("Environment must be one of: prod, dev, demo, local.");
   return result;
+}
+
+export function configureEnvironmentTrust(
+  environment: CobaltEnvironment,
+): void {
+  if (environment.name !== "local" || systemTrustConfigured) return;
+  const systemTrust = tls as SystemTrustTls;
+  if (
+    systemTrust.getCACertificates === undefined ||
+    systemTrust.setDefaultCACertificates === undefined
+  )
+    return;
+  systemTrust.setDefaultCACertificates([
+    ...systemTrust.getCACertificates("default"),
+    ...systemTrust.getCACertificates("system"),
+  ]);
+  systemTrustConfigured = true;
 }
