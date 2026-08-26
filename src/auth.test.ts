@@ -110,7 +110,21 @@ describe("OAuth login", () => {
       "state",
       authorizationUrl!.searchParams.get("state")!,
     );
-    await get(redirect);
+    const callbackResponse = await get(redirect);
+    expect(callbackResponse.statusCode).toBe(200);
+    expect(callbackResponse.headers["content-type"]).toBe(
+      "text/html; charset=utf-8",
+    );
+    expect(callbackResponse.headers["cache-control"]).toBe("no-store");
+    expect(callbackResponse.headers["content-security-policy"]).toContain(
+      "default-src 'none'",
+    );
+    expect(callbackResponse.body).toContain(
+      "Authorization complete · Cobalt CLI",
+    );
+    expect(callbackResponse.body).toContain("You're connected");
+    expect(callbackResponse.body).toContain("cobalt auth status");
+    expect(callbackResponse.body).toContain('aria-label="Cobalt"');
     await pending;
 
     const saved = await store.get("prod:cobalt-cli-prod:api.cobaltcode.ai");
@@ -408,7 +422,13 @@ describe("OAuth login", () => {
         authorizationUrl!.searchParams.get("state")!,
       );
       if (oauthError) redirect.searchParams.set("error", oauthError);
-      await get(redirect);
+      const callbackResponse = await get(redirect);
+      expect(callbackResponse.statusCode).toBe(400);
+      expect(callbackResponse.body).toContain(
+        "Authorization failed · Cobalt CLI",
+      );
+      expect(callbackResponse.body).toContain("Sign-in wasn't completed");
+      expect(callbackResponse.body).toContain("cobalt auth login");
       await rejected;
     },
   );
@@ -676,12 +696,23 @@ async function runInvalidIdTokenLogin(
   await get(redirect);
   await pending;
 }
-async function get(url: URL): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
+async function get(url: URL): Promise<{
+  statusCode: number | undefined;
+  headers: http.IncomingHttpHeaders;
+  body: string;
+}> {
+  return await new Promise((resolve, reject) => {
     http
       .get(url, (response) => {
-        response.resume();
-        response.on("end", resolve);
+        const chunks: Buffer[] = [];
+        response.on("data", (chunk: Buffer) => chunks.push(chunk));
+        response.on("end", () =>
+          resolve({
+            statusCode: response.statusCode,
+            headers: response.headers,
+            body: Buffer.concat(chunks).toString("utf8"),
+          }),
+        );
       })
       .on("error", reject);
   });
