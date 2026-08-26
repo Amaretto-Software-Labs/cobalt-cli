@@ -21,11 +21,15 @@ describe("OAuth login", () => {
       alg: "ES256",
       use: "sig",
     };
+    let loginUrl: URL | undefined;
     let authorizationUrl: URL | undefined;
     const requests: RequestInit[] = [];
     vi.spyOn(process.stderr, "write").mockImplementation((value) => {
       const text = String(value).trim();
-      if (text.startsWith("https://")) authorizationUrl = new URL(text);
+      if (text.startsWith("https://")) {
+        loginUrl = new URL(text);
+        authorizationUrl = authorizationFromLoginEntry(text);
+      }
       return true;
     });
     vi.stubGlobal(
@@ -85,6 +89,8 @@ describe("OAuth login", () => {
     const controller = new AbortController();
     const pending = login(environment, store, false, false, controller.signal);
     await vi.waitFor(() => expect(authorizationUrl).toBeDefined());
+    expect(loginUrl!.origin).toBe(environment.webFrontend.origin);
+    expect(loginUrl!.pathname).toBe("/auth/login");
     expect(authorizationUrl!.searchParams.get("code_challenge_method")).toBe(
       "S256",
     );
@@ -130,7 +136,8 @@ describe("OAuth login", () => {
     let authorizationUrl: URL | undefined;
     vi.spyOn(process.stderr, "write").mockImplementation((value) => {
       const text = String(value).trim();
-      if (text.startsWith("https://")) authorizationUrl = new URL(text);
+      if (text.startsWith("https://"))
+        authorizationUrl = authorizationFromLoginEntry(text);
       return true;
     });
     vi.stubGlobal(
@@ -294,7 +301,8 @@ describe("OAuth login", () => {
     let authorizationUrl: URL | undefined;
     vi.spyOn(process.stderr, "write").mockImplementation((value) => {
       const text = String(value).trim();
-      if (text.startsWith("https://")) authorizationUrl = new URL(text);
+      if (text.startsWith("https://"))
+        authorizationUrl = authorizationFromLoginEntry(text);
       return true;
     });
     vi.stubGlobal(
@@ -349,7 +357,8 @@ describe("OAuth login", () => {
       let authorizationUrl: URL | undefined;
       vi.spyOn(process.stderr, "write").mockImplementation((value) => {
         const text = String(value).trim();
-        if (text.startsWith("https://")) authorizationUrl = new URL(text);
+        if (text.startsWith("https://"))
+          authorizationUrl = authorizationFromLoginEntry(text);
         return true;
       });
       vi.stubGlobal(
@@ -602,7 +611,8 @@ async function runInvalidIdTokenLogin(
   let authorizationUrl: URL | undefined;
   vi.spyOn(process.stderr, "write").mockImplementation((value) => {
     const text = String(value).trim();
-    if (text.startsWith("https://")) authorizationUrl = new URL(text);
+    if (text.startsWith("https://"))
+      authorizationUrl = authorizationFromLoginEntry(text);
     return true;
   });
   vi.stubGlobal(
@@ -675,4 +685,10 @@ async function get(url: URL): Promise<void> {
       })
       .on("error", reject);
   });
+}
+
+function authorizationFromLoginEntry(value: string): URL {
+  const returnUrl = new URL(value).searchParams.get("returnUrl");
+  if (!returnUrl) throw new Error("login entry URL did not include returnUrl");
+  return new URL(returnUrl);
 }

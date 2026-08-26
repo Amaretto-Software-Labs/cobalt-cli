@@ -228,9 +228,11 @@ export async function login(
     nonce,
   }))
     authorization.searchParams.set(key, value);
+  const loginEntry = new URL("/auth/login", environment.webFrontend);
+  loginEntry.searchParams.set("returnUrl", authorization.toString());
   try {
-    if (open) await openBrowser(authorization.toString());
-    else process.stderr.write(`${authorization.toString()}\n`);
+    if (open) await openBrowser(loginEntry.toString());
+    else process.stderr.write(`${loginEntry.toString()}\n`);
     const code = await callback(server, state, signal);
     const response = await identityFetch(
       discovery.token_endpoint,
