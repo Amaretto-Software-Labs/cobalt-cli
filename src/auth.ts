@@ -686,7 +686,8 @@ async function callback(
         state.length === expectedState.length &&
         crypto.timingSafeEqual(Buffer.from(state), Buffer.from(expectedState));
       const code = url.searchParams.get("code");
-      const success = validState && Boolean(code);
+      const authorizationError = url.searchParams.get("error");
+      const success = validState && !authorizationError && Boolean(code);
       response.writeHead(success ? 200 : 400, {
         "content-type": "text/plain; charset=utf-8",
       });
@@ -695,14 +696,32 @@ async function callback(
           ? "Cobalt CLI login completed. You may close this window."
           : "Cobalt CLI login failed.",
       );
-      if (success) succeed(code!);
-      else
+      if (success) {
+        succeed(code!);
+      } else if (!validState) {
         fail(
           new CliError(
             "OAuth callback state validation failed.",
             ExitCode.authentication,
           ),
         );
+      } else if (authorizationError) {
+        fail(
+          new CliError(
+            authorizationError === "access_denied"
+              ? "OAuth login was denied."
+              : "Identity rejected OAuth login.",
+            ExitCode.authentication,
+          ),
+        );
+      } else {
+        fail(
+          new CliError(
+            "OAuth callback did not include an authorization code.",
+            ExitCode.authentication,
+          ),
+        );
+      }
     };
     const timer = setTimeout(
       () =>
