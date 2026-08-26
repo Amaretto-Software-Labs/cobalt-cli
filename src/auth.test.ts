@@ -339,6 +339,71 @@ describe("OAuth login", () => {
     await rejected;
   });
 
+  it.each([
+    ["access_denied", "OAuth login was denied."],
+    ["server_error", "Identity rejected OAuth login."],
+    [undefined, "OAuth callback did not include an authorization code."],
+  ])(
+    "reports an OAuth callback error distinctly from state validation: %s",
+    async (oauthError, expectedMessage) => {
+      let authorizationUrl: URL | undefined;
+      vi.spyOn(process.stderr, "write").mockImplementation((value) => {
+        const text = String(value).trim();
+        if (text.startsWith("https://")) authorizationUrl = new URL(text);
+        return true;
+      });
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: string | URL | Request) => {
+          const url = new URL(
+            typeof input === "string" || input instanceof URL
+              ? input
+              : input.url,
+          );
+          if (url.pathname === "/.well-known/oauth-protected-resource")
+            return json({
+              resource: "https://api.cobaltcode.ai",
+              authorization_servers: ["https://identity.cobaltcode.ai"],
+              scopes_supported: [
+                "cobaltcode.external.read",
+                "cobaltcode.external.operate",
+                "cobaltcode.external.create",
+              ],
+            });
+          return json({
+            issuer: "https://identity.cobaltcode.ai",
+            authorization_endpoint:
+              "https://identity.cobaltcode.ai/connect/authorize",
+            token_endpoint: "https://identity.cobaltcode.ai/connect/token",
+            jwks_uri: "https://identity.cobaltcode.ai/.well-known/jwks",
+          });
+        }),
+      );
+
+      const pending = login(
+        resolveEnvironment("prod"),
+        new MemoryCredentialStore(),
+        false,
+        false,
+      );
+      const rejected = expect(pending).rejects.toMatchObject({
+        exitCode: 3,
+        message: expectedMessage,
+      });
+      await vi.waitFor(() => expect(authorizationUrl).toBeDefined());
+      const redirect = new URL(
+        authorizationUrl!.searchParams.get("redirect_uri")!,
+      );
+      redirect.searchParams.set(
+        "state",
+        authorizationUrl!.searchParams.get("state")!,
+      );
+      if (oauthError) redirect.searchParams.set("error", oauthError);
+      await get(redirect);
+      await rejected;
+    },
+  );
+
   it.each(["nonce", "signature"] as const)(
     "rejects an ID token with an invalid %s",
     async (failure) => {
