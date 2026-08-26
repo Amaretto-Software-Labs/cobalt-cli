@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CobaltApiClient } from "./api.js";
+import { CobaltApiClient, validId } from "./api.js";
 import type { TokenProvider } from "./auth.js";
 import { resolveEnvironment } from "./environment.js";
 import { ApiError } from "./errors.js";
@@ -213,6 +213,37 @@ describe("CobaltApiClient", () => {
     await expect(client.listWorkspaces()).rejects.toMatchObject({
       exitCode: 8,
     });
+  });
+
+  it("accepts canonical .NET GUIDs without RFC version bits", async () => {
+    const legacyId = "434c20bf-acdd-4e7b-fe14-6e7d871065e7";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        json({
+          items: [
+            {
+              id: legacyId,
+              label: "Existing account",
+              agentKind: "codex",
+              status: "unavailable",
+              isDefault: false,
+              defaultModel: null,
+              models: [],
+            },
+          ],
+          hasMore: false,
+        }),
+      ),
+    );
+
+    const page = await new CobaltApiClient(
+      resolveEnvironment("prod"),
+      tokenProvider,
+    ).listAgents();
+
+    expect(page.items[0]?.id).toBe(legacyId);
+    expect(validId(legacyId.toUpperCase())).toBe(legacyId);
   });
 
   it("refreshes once after unauthorized and retries with the rotated token", async () => {
