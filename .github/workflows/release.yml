@@ -87,7 +87,6 @@ jobs:
 
   publish:
     needs: [resolve, package]
-    if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     environment: ${{ needs.resolve.outputs.environment }}
     permissions:
@@ -97,12 +96,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
-          registry-url: https://registry.npmjs.org
       - uses: actions/download-artifact@v8
         with:
           name: cobalt-cli-${{ needs.resolve.outputs.version }}
           path: package
       - name: Publish with npm trusted publishing
+        if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true' }}
         env:
           NPM_TAG: ${{ needs.resolve.outputs.tag }}
         shell: bash
@@ -110,3 +109,6 @@ jobs:
           set -euo pipefail
           tarball="$(find package -name '*.tgz' -print -quit)"
           npm publish "$tarball" --access public --tag "$NPM_TAG" --provenance
+      - name: Report disabled publishing
+        if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED != 'true' }}
+        run: echo "Package validation completed; npm publishing is disabled for this environment."
