@@ -18,5 +18,14 @@ describe("release workflow", () => {
         /environment: \$\{\{ needs\.resolve\.outputs\.environment \}\}/g,
       ),
     ).toHaveLength(2);
+
+    const publishJob = workflow.slice(workflow.indexOf("  publish:\n"));
+    expect(publishJob).not.toContain("registry-url:");
+    expect(publishJob).toContain(
+      "- name: Publish with npm trusted publishing\n        if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true' }}",
+    );
+    expect(publishJob).toContain(
+      "- name: Report disabled publishing\n        if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED != 'true' }}",
+    );
   });
 });
