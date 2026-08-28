@@ -20,8 +20,10 @@ describe("release workflow", () => {
     ).toHaveLength(2);
 
     const publishJob = workflow.slice(workflow.indexOf("  publish:\n"));
-    expect(publishJob).not.toContain("registry-url:");
-    expect(publishJob).toContain("npm install --global npm@12.0.2");
+    expect(publishJob).toContain("registry-url: https://registry.npmjs.org");
+    expect(publishJob).toContain("package-manager-cache: false");
+    expect(publishJob).not.toContain("npm install --global npm@");
+    expect(publishJob).not.toContain("--provenance");
     expect(publishJob).toContain(
       "- name: Publish with npm trusted publishing\n        if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true' }}",
     );
