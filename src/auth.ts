@@ -17,6 +17,7 @@ import {
   ResponseReadError,
   trackResponseForegroundSignal,
 } from "./http.js";
+import { withCredentialRefreshLock } from "./refresh-lock.js";
 
 const execFileAsync = promisify(execFile);
 const sessionSchema = z.strictObject({
@@ -381,6 +382,14 @@ export class TokenProvider {
   }
 
   private async refresh(signal?: AbortSignal): Promise<string> {
+    return await withCredentialRefreshLock(
+      account(this.environment),
+      signal,
+      async () => await this.refreshLocked(signal),
+    );
+  }
+
+  private async refreshLocked(signal?: AbortSignal): Promise<string> {
     const raw = await this.store.get(account(this.environment));
     if (!raw)
       throw new CliError(
