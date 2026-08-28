@@ -30,6 +30,7 @@ const expected = new Map([
   ["POST /v1/tasks/{taskId}/turn/cancel", ["CancelTaskTurn", "cancelTurn"]],
   ["POST /v1/tasks/{taskId}/suspend", ["SuspendTask", "suspendTask"]],
   ["POST /v1/tasks/{taskId}/resume", ["ResumeTask", "resumeTask"]],
+  ["DELETE /v1/tasks/{taskId}", ["DeleteTask", "deleteTask"]],
   ["POST /v1/tasks/wait", ["WaitForTasks", "waitForTasks"]],
 ]);
 
@@ -59,10 +60,10 @@ for (const [route, [operation, method]] of expected) {
 for (const route of actual.keys())
   if (!expected.has(route))
     mismatches.push(`${route}: missing CLI operation mapping`);
-if (mismatches.length || actual.size !== 16) {
+if (mismatches.length || actual.size !== 17) {
   process.stderr.write(
     `Cobalt External API parity check failed:\n${mismatches.map((item) => `- ${item}`).join("\n")}\n`,
   );
   process.exit(1);
 }
-process.stdout.write("Cobalt External API parity: 16/16 operations mapped.\n");
+process.stdout.write("Cobalt External API parity: 17/17 operations mapped.\n");

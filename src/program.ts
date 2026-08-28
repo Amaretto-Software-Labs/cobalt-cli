@@ -426,6 +426,17 @@ export function createProgram(runtime: Runtime): Command {
         "taskOperationAccepted",
       ),
     );
+  task
+    .command("delete <task-id>")
+    .description("Delete the task, its computer, and its writable disk.")
+    .action(async (taskId: string, _options, command) =>
+      mutation(
+        runtime,
+        command,
+        (context, key) => context.api.deleteTask(taskId, key),
+        "taskOperationAccepted",
+      ),
+    );
   addWait(task, runtime);
   addFollow(task, runtime);
   task
@@ -1022,7 +1033,7 @@ function completion(shell: string): string | undefined {
     return `_cobalt_complete() {
   local commands="interactive auth workspace repo agent task completion version"
   local auth="login logout status" workspace="list use current" repo="list" agent="list"
-  local task="list get search create messages message-search events send steer cancel suspend resume wait follow open"
+  local task="list get search create messages message-search events send steer cancel suspend resume delete wait follow open"
   local previous="\${COMP_WORDS[COMP_CWORD-1]}" choices="$commands"
   case "\${COMP_WORDS[1]}" in auth) choices="$auth";; workspace) choices="$workspace";; repo) choices="$repo";; agent) choices="$agent";; task) choices="$task";; esac
   COMPREPLY=( $(compgen -W "$choices --environment --workspace --json --jsonl --quiet --no-color --trace --idempotency-key --help --version" -- "\${COMP_WORDS[COMP_CWORD]}") )
@@ -1038,7 +1049,7 @@ _cobalt() {
     auth) _values action login logout status;;
     workspace) _values action list use current;;
     repo|agent) _values action list;;
-    task) _values action list get search create messages message-search events send steer cancel suspend resume wait follow open;;
+    task) _values action list get search create messages message-search events send steer cancel suspend resume delete wait follow open;;
     completion) _values shell bash zsh fish powershell;;
     *) _arguments '*:argument:';;
   esac
@@ -1050,12 +1061,12 @@ complete -c cobalt -n '__fish_use_subcommand' -a 'interactive auth workspace rep
 complete -c cobalt -n '__fish_seen_subcommand_from auth' -a 'login logout status'
 complete -c cobalt -n '__fish_seen_subcommand_from workspace' -a 'list use current'
 complete -c cobalt -n '__fish_seen_subcommand_from repo agent' -a 'list'
-complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'list get search create messages message-search events send steer cancel suspend resume wait follow open'
+complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'list get search create messages message-search events send steer cancel suspend resume delete wait follow open'
 complete -c cobalt -l environment -a 'prod dev demo local'`;
   if (shell === "powershell")
     return `Register-ArgumentCompleter -Native -CommandName cobalt -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $words = @('interactive','auth','workspace','repo','agent','task','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','wait','follow','open','prod','dev','demo','local','bash','zsh','fish','powershell')
+  $words = @('interactive','auth','workspace','repo','agent','task','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','prod','dev','demo','local','bash','zsh','fish','powershell')
   $words | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { [System.Management.Automation.CompletionResult]::new($_,$_, 'ParameterValue', $_) }
 }`;
   return undefined;
