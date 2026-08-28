@@ -109,9 +109,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tarball="$(find package -name '*.tgz' -print -quit)"
+          mapfile -t tarballs < <(find "$PWD/package" -type f -name '*.tgz')
+          [ "${#tarballs[@]}" -eq 1 ]
           npm --version
-          npm publish "$tarball" --access public --tag "$NPM_TAG"
+          npm publish "${tarballs[0]}" --access public --tag "$NPM_TAG"
       - name: Report disabled publishing
         if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED != 'true' }}
         run: echo "Package validation completed; npm publishing is disabled for this environment."

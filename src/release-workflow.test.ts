@@ -24,6 +24,9 @@ describe("release workflow", () => {
     expect(publishJob).toContain("package-manager-cache: false");
     expect(publishJob).not.toContain("npm install --global npm@");
     expect(publishJob).not.toContain("--provenance");
+    expect(publishJob).toContain("find \"$PWD/package\" -type f -name '*.tgz'");
+    expect(publishJob).toContain('[ "${#tarballs[@]}" -eq 1 ]');
+    expect(publishJob).toContain('npm publish "${tarballs[0]}"');
     expect(publishJob).toContain(
       "- name: Publish with npm trusted publishing\n        if: ${{ vars.NPM_TRUSTED_PUBLISHING_ENABLED == 'true' }}",
     );
