@@ -36,6 +36,7 @@ describe("command catalog", () => {
         "task",
         "task cancel",
         "task create",
+        "task delete",
         "task events",
         "task follow",
         "task get",
@@ -279,6 +280,28 @@ describe("command catalog", () => {
     );
   });
 
+  it("routes task delete through the idempotent mutation path", async () => {
+    const key = "22222222-2222-4222-8222-222222222222";
+    const taskId = "11111111-1111-4111-8111-111111111111";
+    const context = fakeContext();
+    context.output = new Output(context.environment, "human", true);
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    context.api = {
+      deleteTask: vi.fn(async () => ({
+        value: { taskId, status: "accepted" },
+      })),
+    } as unknown as Context["api"];
+    const runtime = {
+      context: vi.fn(async () => context),
+    } as unknown as Runtime;
+
+    await expect(
+      runProgram(runtime, ["task", "delete", taskId, "--idempotency-key", key]),
+    ).resolves.toBe(0);
+
+    expect(context.api.deleteTask).toHaveBeenCalledWith(taskId, key);
+  });
+
   it("rejects the nil UUID as an idempotency key", async () => {
     const context = fakeContext();
     context.api = { cancelTurn: vi.fn() } as unknown as Context["api"];
@@ -312,7 +335,7 @@ describe("command catalog", () => {
     for (const script of writes) {
       expect(script).toContain("version");
       expect(script).toContain("message-search");
-      expect(script).not.toContain("delete");
+      expect(script).toContain("delete");
     }
   });
 

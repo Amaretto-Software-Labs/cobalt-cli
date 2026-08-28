@@ -105,6 +105,37 @@ describe("CobaltApiClient", () => {
     expect(fetch).toHaveBeenCalledOnce();
   });
 
+  it("deletes a task without a request body and preserves the idempotency key", async () => {
+    const fetch = vi.fn(async () =>
+      json(
+        {
+          taskId: "22222222-2222-4222-8222-222222222222",
+          status: "accepted",
+          operationInProgress: true,
+          lastEventSequence: 3,
+          acceptedAt: "2026-08-28T08:00:00Z",
+        },
+        202,
+      ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const client = new CobaltApiClient(
+      resolveEnvironment("prod"),
+      tokenProvider,
+    );
+    const key = "33333333-3333-4333-8333-333333333333";
+
+    await client.deleteTask("22222222-2222-4222-8222-222222222222", key);
+
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(String(url)).toBe(
+      "https://api.cobaltcode.ai/v1/tasks/22222222-2222-4222-8222-222222222222",
+    );
+    expect(init.method).toBe("DELETE");
+    expect(init.body).toBeUndefined();
+    expect(new Headers(init.headers).get("idempotency-key")).toBe(key);
+  });
+
   it("cancels a retry delay without waiting for Retry-After", async () => {
     const fetch = vi.fn(async () =>
       json(

@@ -393,6 +393,20 @@ export class CobaltApiClient {
       signal,
     );
   }
+  public deleteTask(
+    taskId: string,
+    key: string,
+    signal?: AbortSignal,
+  ): Promise<MutationResult<z.infer<typeof lifecycleResponseSchema>>> {
+    return this.mutate(
+      `tasks/${validId(taskId)}`,
+      undefined,
+      key,
+      lifecycleResponseSchema,
+      signal,
+      "DELETE",
+    );
+  }
   public waitForTasks(
     body: object,
     signal?: AbortSignal,
@@ -402,14 +416,15 @@ export class CobaltApiClient {
 
   private async mutate<T>(
     path: string,
-    body: object,
+    body: object | undefined,
     key: string,
     schema: z.ZodType<T>,
     signal?: AbortSignal,
+    method = "POST",
   ): Promise<MutationResult<T>> {
     validId(key);
     const response = await this.send(
-      "POST",
+      method,
       path,
       body,
       { "idempotency-key": key },
