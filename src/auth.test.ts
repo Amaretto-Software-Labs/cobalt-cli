@@ -1,4 +1,5 @@
 import http from "node:http";
+import { createHash } from "node:crypto";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { login, logout, TokenProvider } from "./auth.js";
@@ -101,6 +102,31 @@ describe("OAuth login", () => {
       "https://api.cobaltcode.ai",
     );
     expect(authorizationUrl!.searchParams.get("nonce")).toBeTruthy();
+    const originalAuthorization = authorizationUrl!;
+    const denied = new URL(
+      originalAuthorization.searchParams.get("redirect_uri")!,
+    );
+    denied.searchParams.set(
+      "state",
+      originalAuthorization.searchParams.get("state")!,
+    );
+    denied.searchParams.set("error", "access_denied");
+    const cancelled = await get(denied);
+    expect(cancelled.body).toContain("Sign-in cancelled");
+    const retry = new URL(
+      cancelled.body.match(/<form action="([^"]+)"/)![1]!,
+      denied,
+    );
+    retry.searchParams.set("account", "change");
+    const restarted = await get(retry, "POST");
+    expect(restarted.statusCode).toBe(303);
+    expect(new URL(restarted.headers.location!).pathname).toBe("/auth/logout");
+    authorizationUrl = authorizationFromLoginEntry(restarted.headers.location!);
+    for (const key of ["state", "nonce", "code_challenge"]) {
+      expect(authorizationUrl.searchParams.get(key)).not.toBe(
+        originalAuthorization.searchParams.get(key),
+      );
+    }
     const redirect = new URL(
       authorizationUrl!.searchParams.get("redirect_uri")!,
     );
@@ -134,6 +160,13 @@ describe("OAuth login", () => {
     });
     expect(saved).not.toContain("opaque-access-token");
     expect(requests).toHaveLength(4);
+    const tokenRequest = requests.find((request) => request.method === "POST")!;
+    const verifier = new URLSearchParams(
+      tokenRequest.body as URLSearchParams,
+    ).get("code_verifier")!;
+    expect(
+      createHash("sha256").update(verifier, "ascii").digest("base64url"),
+    ).toBe(authorizationUrl!.searchParams.get("code_challenge"));
     expect(requests.every((request) => request.redirect === "error")).toBe(
       true,
     );
@@ -344,27 +377,33 @@ describe("OAuth login", () => {
         });
       }),
     );
+    const controller = new AbortController();
     const pending = login(
       resolveEnvironment("prod"),
       new MemoryCredentialStore(),
       false,
       false,
+      controller.signal,
     );
-    const rejected = expect(pending).rejects.toMatchObject({ exitCode: 3 });
+    const rejected = expect(pending).rejects.toMatchObject({ exitCode: 130 });
     await vi.waitFor(() => expect(authorizationUrl).toBeDefined());
     const redirect = new URL(
       authorizationUrl!.searchParams.get("redirect_uri")!,
     );
     redirect.searchParams.set("code", "authorization-code");
     redirect.searchParams.set("state", "wrong-state");
-    await get(redirect);
+    const response = await get(redirect);
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toContain("This sign-in link is no longer valid");
+    expect(response.body).toContain("Try again");
+    controller.abort();
     await rejected;
   });
 
   it.each([
-    ["access_denied", "OAuth login was denied."],
-    ["server_error", "Identity rejected OAuth login."],
-    [undefined, "OAuth callback did not include an authorization code."],
+    ["access_denied", "Sign-in cancelled"],
+    ["server_error", "Sign-in wasn't completed"],
+    [undefined, "Sign-in wasn't completed"],
   ])(
     "reports an OAuth callback error distinctly from state validation: %s",
     async (oauthError, expectedMessage) => {
@@ -403,15 +442,16 @@ describe("OAuth login", () => {
         }),
       );
 
+      const controller = new AbortController();
       const pending = login(
         resolveEnvironment("prod"),
         new MemoryCredentialStore(),
         false,
         false,
+        controller.signal,
       );
       const rejected = expect(pending).rejects.toMatchObject({
-        exitCode: 3,
-        message: expectedMessage,
+        exitCode: 130,
       });
       await vi.waitFor(() => expect(authorizationUrl).toBeDefined());
       const redirect = new URL(
@@ -424,11 +464,13 @@ describe("OAuth login", () => {
       if (oauthError) redirect.searchParams.set("error", oauthError);
       const callbackResponse = await get(redirect);
       expect(callbackResponse.statusCode).toBe(400);
+      expect(callbackResponse.body).toContain(expectedMessage);
+      expect(callbackResponse.body).toContain("Try again");
       expect(callbackResponse.body).toContain(
-        "Authorization failed · Cobalt CLI",
+        "Press Enter in your terminal to retry",
       );
-      expect(callbackResponse.body).toContain("Sign-in wasn't completed");
-      expect(callbackResponse.body).toContain("cobalt auth login");
+      expect(callbackResponse.body).not.toContain("cobalt auth login");
+      controller.abort();
       await rejected;
     },
   );
@@ -436,9 +478,7 @@ describe("OAuth login", () => {
   it.each(["nonce", "signature"] as const)(
     "rejects an ID token with an invalid %s",
     async (failure) => {
-      await expect(runInvalidIdTokenLogin(failure)).rejects.toMatchObject({
-        exitCode: 3,
-      });
+      await runInvalidIdTokenLogin(failure);
     },
   );
 });
@@ -685,7 +725,10 @@ async function runInvalidIdTokenLogin(
       });
     }),
   );
-  const pending = login(environment, new MemoryCredentialStore(), false, false);
+  const controller = new AbortController();
+  const store = new MemoryCredentialStore();
+  const pending = login(environment, store, false, false, controller.signal);
+  const interrupted = expect(pending).rejects.toMatchObject({ exitCode: 130 });
   await vi.waitFor(() => expect(authorizationUrl).toBeDefined());
   const redirect = new URL(authorizationUrl!.searchParams.get("redirect_uri")!);
   redirect.searchParams.set("code", "code");
@@ -693,17 +736,25 @@ async function runInvalidIdTokenLogin(
     "state",
     authorizationUrl!.searchParams.get("state")!,
   );
-  await get(redirect);
-  await pending;
+  const response = await get(redirect);
+  expect(response.statusCode).toBe(400);
+  expect(response.body).toContain("Try again");
+  expect(response.body).not.toContain("Authorization complete");
+  expect(await store.get("prod:cobalt-cli-prod:api.cobaltcode.ai")).toBeNull();
+  controller.abort();
+  await interrupted;
 }
-async function get(url: URL): Promise<{
+async function get(
+  url: URL,
+  method = "GET",
+): Promise<{
   statusCode: number | undefined;
   headers: http.IncomingHttpHeaders;
   body: string;
 }> {
   return await new Promise((resolve, reject) => {
-    http
-      .get(url, (response) => {
+    const request = http
+      .request(url, { method }, (response) => {
         const chunks: Buffer[] = [];
         response.on("data", (chunk: Buffer) => chunks.push(chunk));
         response.on("end", () =>
@@ -715,6 +766,7 @@ async function get(url: URL): Promise<{
         );
       })
       .on("error", reject);
+    request.end();
   });
 }
 

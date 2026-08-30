@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import http from "node:http";
+import { runOAuthSession, type OAuthPageKind } from "./oauth-session.js";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -42,17 +42,56 @@ const tokenSchema = z.object({
 });
 const identityRequestTimeoutMs = 30_000;
 
-function oauthCallbackPage(success: boolean): string {
-  const status = success ? "success" : "error";
-  const title = success ? "Authorization complete" : "Authorization failed";
-  const heading = success ? "You're connected" : "Sign-in wasn't completed";
+export function renderOAuthCallbackPage(
+  kind: OAuthPageKind,
+  retryPath?: string,
+): string {
+  const success = kind === "success";
+  const waiting = kind === "waiting";
+  const status = success ? "success" : waiting ? "waiting" : "error";
+  const title = success
+    ? "Authorization complete"
+    : kind === "cancelled"
+      ? "Sign-in cancelled"
+      : waiting
+        ? "Waiting for sign-in"
+        : "Authorization failed";
+  const heading = success
+    ? "You're connected"
+    : kind === "cancelled"
+      ? "Sign-in cancelled"
+      : waiting
+        ? "Finish signing in"
+        : kind === "timeout"
+          ? "Sign-in timed out"
+          : kind === "invalid"
+            ? "This sign-in link is no longer valid"
+            : "Sign-in wasn't completed";
   const description = success
-    ? "Cobalt CLI received your authorization and is finishing sign-in in the terminal."
-    : "Return to your terminal for details, then run the login command again to retry.";
-  const command = success ? "cobalt auth status" : "cobalt auth login";
+    ? "Cobalt CLI is connected. You can close this window and return to your terminal."
+    : kind === "cancelled"
+      ? "You cancelled authorization. No access was granted to the CLI. Try again, or sign in with a different account."
+      : waiting
+        ? retryPath
+          ? "Complete authorization in your browser. If you closed the page or chose the wrong account, you can restart below."
+          : "Finishing sign-in and saving your credentials securely. Please wait, or press Ctrl+C in your terminal to stop."
+        : kind === "invalid"
+          ? "This response does not match the active sign-in attempt. Your CLI is still waiting. Start a fresh attempt below."
+          : kind === "timeout"
+            ? "This sign-in attempt expired. Your CLI is still running and ready for a fresh attempt."
+            : "We couldn't finish signing you in. No new credentials were saved. Try again without restarting the CLI.";
+  const command = success
+    ? "cobalt auth status"
+    : retryPath
+      ? "Press Enter in your terminal to retry"
+      : waiting
+        ? "Finishing sign-in…"
+        : "cobalt auth login";
   const statusLabel = success
     ? "Secure authorization complete"
-    : "Authorization needs attention";
+    : waiting
+      ? "Waiting for secure authorization"
+      : "Authorization needs attention";
 
   return `<!doctype html>
 <html lang="en">
@@ -87,7 +126,7 @@ function oauthCallbackPage(success: boolean): string {
       display: grid;
       place-items: center;
       padding: 24px;
-      overflow: hidden;
+      overflow-x: hidden;
       background:
         radial-gradient(circle at 12% 5%, rgb(34 211 238 / 18%), transparent 34%),
         radial-gradient(circle at 88% 18%, rgb(56 189 248 / 15%), transparent 31%),
@@ -168,6 +207,7 @@ function oauthCallbackPage(success: boolean): string {
     }
 
     [data-status="success"] { --status-color: var(--success); }
+    [data-status="waiting"] { --status-color: var(--accent); }
     [data-status="error"] { --status-color: var(--error); }
 
     h1 {
@@ -196,6 +236,20 @@ function oauthCallbackPage(success: boolean): string {
     }
 
     .prompt { color: var(--accent); user-select: none; }
+
+    .actions { display: grid; gap: 10px; margin-top: 24px; }
+    .actions form { margin: 0; }
+    .actions button {
+      width: 100%; min-height: 44px; padding: 10px 16px;
+      border: 1px solid var(--accent); border-radius: 8px;
+      background: var(--accent); color: var(--accent-contrast);
+      font: inherit; font-weight: 650; cursor: pointer;
+    }
+    .actions button:hover { background: var(--accent-hover); }
+    .actions .secondary { color: var(--text-bright); background: transparent; border-color: var(--border); }
+    .actions .secondary:hover { background: var(--panel-elevated); }
+    .actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .hint { color: var(--text-muted); font-size: 12px; margin: 12px 0 0; }
 
     .footer {
       display: flex;
@@ -271,7 +325,7 @@ function oauthCallbackPage(success: boolean): string {
 <body data-status="${status}">
   <div class="glow glow-one" aria-hidden="true"></div>
   <div class="glow glow-two" aria-hidden="true"></div>
-  <main class="card" aria-labelledby="page-title">
+  <main class="card" aria-labelledby="page-title" role="${success || waiting ? "status" : "alert"}">
     <div class="accent-line" aria-hidden="true"></div>
     <div class="content">
       <header class="brand">
@@ -294,9 +348,17 @@ function oauthCallbackPage(success: boolean): string {
       </div>
       <h1 id="page-title">${heading}</h1>
       <p class="description">${description}</p>
+${
+  !success && retryPath
+    ? `<div class="actions">
+        <form action="${retryPath.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")}" method="post"><button type="submit">Try again</button></form>
+        <form action="${retryPath.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")}?account=change" method="post"><button class="secondary" type="submit">Use another account</button></form>
+      </div><p class="hint">Using another account signs you out of Cobalt in this browser. Keep the CLI open; press Enter there to retry, or Ctrl+C to stop.</p>`
+    : ""
+}
 
-      <div class="terminal" aria-label="Suggested terminal command">
-        <span class="prompt" aria-hidden="true">$</span>
+      <div class="terminal" aria-label="Terminal guidance">
+        <span class="prompt" aria-hidden="true">${success || (!retryPath && !waiting) ? "$" : "›"}</span>
         <span>${command}</span>
       </div>
 
@@ -309,6 +371,23 @@ function oauthCallbackPage(success: boolean): string {
 </body>
 </html>`;
 }
+
+export const oauthCallbackResponseHeaders = Object.freeze({
+  "cache-control": "no-store",
+  "content-security-policy": `default-src 'none'; style-src 'sha256-${crypto
+    .createHash("sha256")
+    .update(
+      renderOAuthCallbackPage("success").match(
+        /<style>([\s\S]*?)<\/style>/,
+      )![1]!,
+    )
+    .digest(
+      "base64",
+    )}'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'`,
+  "content-type": "text/html; charset=utf-8",
+  "referrer-policy": "no-referrer",
+  "x-content-type-options": "nosniff",
+});
 
 export type OAuthSession = z.infer<typeof sessionSchema>;
 type Discovery = z.infer<typeof discoverySchema>;
@@ -480,86 +559,109 @@ export async function login(
 ): Promise<void> {
   await validateProtectedResource(environment, signal);
   const discovery = await getDiscovery(environment, signal);
-  const verifier = crypto.randomBytes(64).toString("base64url");
-  const challenge = crypto
-    .createHash("sha256")
-    .update(verifier, "ascii")
-    .digest("base64url");
-  const state = crypto.randomBytes(32).toString("base64url");
-  const nonce = crypto.randomBytes(32).toString("base64url");
-  const server = http.createServer();
-  const redirect = await listen(server);
   const scopes = readOnly
     ? "openid profile offline_access cobaltcode.external.read"
     : "openid profile offline_access cobaltcode.external.read cobaltcode.external.operate cobaltcode.external.create";
-  const authorization = new URL(discovery.authorization_endpoint);
-  for (const [key, value] of Object.entries({
-    response_type: "code",
-    client_id: environment.clientId,
-    redirect_uri: redirect,
-    scope: scopes,
-    resource: resource(environment),
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-    state,
-    nonce,
-  }))
-    authorization.searchParams.set(key, value);
-  const loginEntry = new URL("/auth/login", environment.webFrontend);
-  loginEntry.searchParams.set("returnUrl", authorization.toString());
   try {
-    if (open) await openBrowser(loginEntry.toString());
-    else process.stderr.write(`${loginEntry.toString()}\n`);
-    const code = await callback(server, state, signal);
-    const response = await identityFetch(
-      discovery.token_endpoint,
-      {
-        method: "POST",
-        redirect: "error",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          grant_type: "authorization_code",
-          code,
-          redirect_uri: redirect,
+    await runOAuthSession({
+      signal,
+      headers: oauthCallbackResponseHeaders,
+      renderPage: renderOAuthCallbackPage,
+      openBrowser: open ? openBrowser : undefined,
+      createAttempt(redirect, _retry, switchAccount) {
+        const verifier = crypto.randomBytes(64).toString("base64url");
+        const challenge = crypto
+          .createHash("sha256")
+          .update(verifier, "ascii")
+          .digest("base64url");
+        const state = crypto.randomBytes(32).toString("base64url");
+        const nonce = crypto.randomBytes(32).toString("base64url");
+        const authorization = new URL(discovery.authorization_endpoint);
+        for (const [key, value] of Object.entries({
+          response_type: "code",
           client_id: environment.clientId,
-          code_verifier: verifier,
+          redirect_uri: redirect,
+          scope: scopes,
           resource: resource(environment),
-        }),
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          state,
+          nonce,
+        }))
+          authorization.searchParams.set(key, value);
+        const loginEntry = new URL(
+          switchAccount ? "/auth/logout" : "/auth/login",
+          environment.webFrontend,
+        );
+        loginEntry.searchParams.set("returnUrl", authorization.toString());
+        return {
+          state,
+          authorizationUrl: loginEntry.toString(),
+          async complete(code, signal) {
+            const response = await identityFetch(
+              discovery.token_endpoint,
+              {
+                method: "POST",
+                redirect: "error",
+                headers: {
+                  "content-type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                  grant_type: "authorization_code",
+                  code,
+                  redirect_uri: redirect,
+                  client_id: environment.clientId,
+                  code_verifier: verifier,
+                  resource: resource(environment),
+                }),
+              },
+              signal,
+            );
+            if (!response.ok)
+              throw new CliError(
+                "Identity rejected the OAuth code exchange.",
+                ExitCode.authentication,
+              );
+            const tokens = await readBoundedJson(response, tokenSchema);
+            if (!tokens.refresh_token || !tokens.id_token)
+              throw new CliError(
+                "Identity did not return a complete offline session.",
+                ExitCode.authentication,
+              );
+            const subject = await validateTokens(
+              tokens.access_token,
+              tokens.id_token,
+              discovery,
+              environment,
+              undefined,
+              nonce,
+              signal,
+            );
+            validateGrantedScopes(tokens.scope ?? scopes, scopes);
+            signal.throwIfAborted();
+            await store.set(
+              account(environment),
+              JSON.stringify({
+                refreshToken: tokens.refresh_token,
+                subject,
+                scope: tokens.scope ?? scopes,
+                savedAt: new Date().toISOString(),
+              }),
+            );
+          },
+        };
       },
-      signal,
+    });
+  } catch (error) {
+    if (error instanceof CliError) throw error;
+    throw new CliError(
+      error instanceof Error ? error.message : "OAuth login failed.",
+      signal?.aborted ||
+        (error instanceof Error &&
+          error.message === "OAuth login was interrupted.")
+        ? ExitCode.interrupted
+        : ExitCode.authentication,
     );
-    if (!response.ok)
-      throw new CliError(
-        "Identity rejected the OAuth code exchange.",
-        ExitCode.authentication,
-      );
-    const tokens = await readBoundedJson(response, tokenSchema);
-    if (!tokens.refresh_token || !tokens.id_token)
-      throw new CliError(
-        "Identity did not return a complete offline session.",
-        ExitCode.authentication,
-      );
-    const subject = await validateTokens(
-      tokens.access_token,
-      tokens.id_token,
-      discovery,
-      environment,
-      undefined,
-      nonce,
-      signal,
-    );
-    validateGrantedScopes(tokens.scope ?? scopes, scopes);
-    await store.set(
-      account(environment),
-      JSON.stringify({
-        refreshToken: tokens.refresh_token,
-        subject,
-        scope: tokens.scope ?? scopes,
-        savedAt: new Date().toISOString(),
-      }),
-    );
-  } finally {
-    server.close();
   }
 }
 
@@ -913,105 +1015,6 @@ async function readBoundedJson<T>(
 
 function resource(environment: CobaltEnvironment): string {
   return environment.oauthResource.toString().replace(/\/$/, "");
-}
-
-async function listen(server: http.Server): Promise<string> {
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
-  });
-  const address = server.address();
-  if (!address || typeof address === "string")
-    throw new CliError(
-      "Could not reserve an OAuth callback port.",
-      ExitCode.authentication,
-    );
-  return `http://127.0.0.1:${address.port}/callback/`;
-}
-
-async function callback(
-  server: http.Server,
-  expectedState: string,
-  signal?: AbortSignal,
-): Promise<string> {
-  return await new Promise<string>((resolve, reject) => {
-    let settled = false;
-    const cleanup = () => {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", onAbort);
-      server.off("request", onRequest);
-    };
-    const succeed = (code: string) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(code);
-    };
-    const fail = (error: CliError) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      reject(error);
-    };
-    const onAbort = () =>
-      fail(new CliError("OAuth login was interrupted.", ExitCode.interrupted));
-    const onRequest = (
-      request: http.IncomingMessage,
-      response: http.ServerResponse,
-    ) => {
-      const url = new URL(request.url ?? "/", "http://127.0.0.1");
-      const state = url.searchParams.get("state") ?? "";
-      const validState =
-        state.length === expectedState.length &&
-        crypto.timingSafeEqual(Buffer.from(state), Buffer.from(expectedState));
-      const code = url.searchParams.get("code");
-      const authorizationError = url.searchParams.get("error");
-      const success = validState && !authorizationError && Boolean(code);
-      response.writeHead(success ? 200 : 400, {
-        "cache-control": "no-store",
-        "content-security-policy":
-          "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
-        "content-type": "text/html; charset=utf-8",
-        "referrer-policy": "no-referrer",
-        "x-content-type-options": "nosniff",
-      });
-      response.end(oauthCallbackPage(success));
-      if (success) {
-        succeed(code!);
-      } else if (!validState) {
-        fail(
-          new CliError(
-            "OAuth callback state validation failed.",
-            ExitCode.authentication,
-          ),
-        );
-      } else if (authorizationError) {
-        fail(
-          new CliError(
-            authorizationError === "access_denied"
-              ? "OAuth login was denied."
-              : "Identity rejected OAuth login.",
-            ExitCode.authentication,
-          ),
-        );
-      } else {
-        fail(
-          new CliError(
-            "OAuth callback did not include an authorization code.",
-            ExitCode.authentication,
-          ),
-        );
-      }
-    };
-    const timer = setTimeout(
-      () =>
-        fail(new CliError("OAuth login timed out.", ExitCode.authentication)),
-      300_000,
-    );
-    server.once("request", onRequest);
-    signal?.addEventListener("abort", onAbort, { once: true });
-    if (signal?.aborted) onAbort();
-  });
 }
 
 async function identityFetch(
