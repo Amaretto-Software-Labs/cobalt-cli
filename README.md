@@ -16,6 +16,15 @@ cobalt auth login
 
 OAuth sessions are stored in macOS Keychain, Windows Credential Manager, or Linux Secret Service. Credential storage fails closed; the CLI never falls back to a plaintext token file. For automation, provide one scoped token through `COBALT_TOKEN`.
 
+If browser sign-in fails or you cancel consent, keep the CLI running. The branded
+recovery page offers **Try again** and **Use another account** (which signs out of
+the web app before returning to sign-in). You can also press **Enter** in an
+interactive terminal to start a fresh attempt, or open the recovery URL printed
+by the CLI if you closed the browser. Each attempt uses new OAuth state and PKCE
+values. Attempts time out after five minutes; the retry page remains available
+for another ten minutes. **Ctrl+C** stops login and closes the local listener.
+The success page is shown only after credentials are validated and securely saved.
+
 ## Quick start
 
 ```bash
