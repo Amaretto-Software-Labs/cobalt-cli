@@ -3,6 +3,83 @@
 import { readFile } from "node:fs/promises";
 
 const expected = new Map([
+  [
+    "GET /v1/workspaces/{workspaceId}/task-queue",
+    ["ListTaskQueue", "listTaskQueue"],
+  ],
+  [
+    "POST /v1/tasks/{taskId}/admission/{action}",
+    ["MutateTaskAdmission", "mutateTaskAdmission"],
+  ],
+  ["GET /v1/workspaces/{workspaceId}/loops", ["ListLoops", "listLoops"]],
+  ["POST /v1/workspaces/{workspaceId}/loops", ["CreateLoop", "createLoop"]],
+  ["GET /v1/workspaces/{workspaceId}/loops/{loopId}", ["GetLoop", "getLoop"]],
+  [
+    "PUT /v1/workspaces/{workspaceId}/loops/{loopId}/definition",
+    ["UpdateLoop", "updateLoop"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/loops/{loopId}/enable",
+    ["EnableLoop", "enableLoop"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/loops/{loopId}/disable",
+    ["DisableLoop", "disableLoop"],
+  ],
+  [
+    "DELETE /v1/workspaces/{workspaceId}/loops/{loopId}",
+    ["DeleteLoop", "deleteLoop"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/loops/{loopId}/run",
+    ["RunLoop", "runLoop"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/loops/{loopId}/runs/{runId}/rerun",
+    ["RerunLoop", "rerunLoop"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/loops/{loopId}/runs",
+    ["ListLoopRuns", "listLoopRuns"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/loops/{loopId}/decisions",
+    ["ListLoopDecisions", "listLoopDecisions"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/loops/{loopId}/lanes",
+    ["ListLoopLanes", "listLoopLanes"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/loop-event-descriptors",
+    ["ListLoopEventDescriptors", "listLoopEventDescriptors"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/loop-schedule-preview",
+    ["PreviewLoopSchedule", "previewLoopSchedule"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/worker-roles",
+    ["ListWorkerRoles", "listWorkerRoles"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/worker-roles/{roleKey}",
+    ["GetWorkerRole", "getWorkerRole"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/worker-roles",
+    ["CreateWorkerRole", "createWorkerRole"],
+  ],
+  [
+    "PUT /v1/workspaces/{workspaceId}/worker-roles/{roleKey}",
+    ["UpdateWorkerRole", "updateWorkerRole"],
+  ],
+  [
+    "DELETE /v1/workspaces/{workspaceId}/worker-roles/{roleKey}",
+    ["DeleteWorkerRole", "deleteWorkerRole"],
+  ],
+  ["PUT /v1/tasks/{taskId}/auto-wake", ["SetTaskAutoWake", "setTaskAutoWake"]],
+
   ["GET /v1/workspaces", ["ListWorkspaces", "listWorkspaces"]],
   [
     "GET /v1/workspaces/{workspaceId}/repositories",
@@ -48,7 +125,29 @@ for (const [path, methods] of Object.entries(document.paths ?? {})) {
       actual.set(`${method.toUpperCase()} ${path}`, operation.operationId);
   }
 }
+// These OAuth browser-scope operations belong to the browser extension, not the CLI.
+const browserOperations = new Map([
+  ["PUT /v1/browser-client-sessions/{sessionId}", "ConnectBrowserSession"],
+  [
+    "DELETE /v1/browser-client-sessions/{sessionId}",
+    "DisconnectBrowserSession",
+  ],
+  [
+    "POST /v1/browser-client-sessions/{sessionId}/heartbeat",
+    "HeartbeatBrowserSession",
+  ],
+  [
+    "GET /v1/browser-client-sessions/{sessionId}/tool-calls",
+    "ListBrowserToolCalls",
+  ],
+  ["POST /v1/browser-tool-calls/{callId}/complete", "CompleteBrowserToolCall"],
+]);
 const mismatches = [];
+for (const [route, operation] of browserOperations) {
+  if (actual.get(route) !== operation)
+    mismatches.push(`${route}: browser contract changed`);
+}
+
 for (const [route, [operation, method]] of expected) {
   if (actual.get(route) !== operation)
     mismatches.push(
@@ -58,12 +157,17 @@ for (const [route, [operation, method]] of expected) {
     mismatches.push(`${route}: missing CobaltApiClient.${method} mapping`);
 }
 for (const route of actual.keys())
-  if (!expected.has(route))
+  if (!expected.has(route) && !browserOperations.has(route))
     mismatches.push(`${route}: missing CLI operation mapping`);
-if (mismatches.length || actual.size !== 17) {
+if (
+  mismatches.length ||
+  actual.size !== expected.size + browserOperations.size
+) {
   process.stderr.write(
     `Cobalt External API parity check failed:\n${mismatches.map((item) => `- ${item}`).join("\n")}\n`,
   );
   process.exit(1);
 }
-process.stdout.write("Cobalt External API parity: 17/17 operations mapped.\n");
+process.stdout.write(
+  `Cobalt External API parity: ${expected.size} CLI operations mapped; ${browserOperations.size} browser-extension operations accounted for.\n`,
+);

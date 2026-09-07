@@ -1,3 +1,14 @@
+import {
+  loopSchema,
+  loopDetailSchema,
+  loopMutationSchema,
+  loopRunSchema,
+  loopRunMutationSchema,
+  loopDecisionSchema,
+  loopLaneSchema,
+  roleSchema,
+  roleDetailSchema,
+} from "./api-process-schemas.js";
 import { z } from "zod";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { TokenProvider } from "./auth.js";
@@ -183,6 +194,273 @@ export class CobaltApiClient {
       environment.apiBase.pathname.replace(/\/$/, "") !== "/v1"
     )
       throw new Error("External API base URL must be HTTPS and end in /v1.");
+  }
+
+  public listTaskQueue(workspaceId: string, cursor?: string) {
+    return this.request(
+      "GET",
+      withQuery(`workspaces/${validId(workspaceId)}/task-queue`, { cursor }),
+      pageSchema(
+        z.looseObject({
+          id: z.guid(),
+          taskId: z.guid(),
+          state: z.string(),
+          version: z.number().int().positive(),
+          allowedActions: z.array(z.string()),
+        }),
+      ),
+    );
+  }
+  public mutateTaskAdmission(
+    taskId: string,
+    action: "hold" | "release" | "cancel" | "retry" | "move",
+    body: object,
+    key: string,
+  ) {
+    return this.mutate(
+      `tasks/${validId(taskId)}/admission/${action}`,
+      body,
+      key,
+      z.looseObject({
+        id: z.guid(),
+        taskId: z.guid(),
+        state: z.string(),
+        version: z.number().int().positive(),
+        allowedActions: z.array(z.string()),
+      }),
+    );
+  }
+  public listLoops(
+    workspaceId: string,
+    view = "mine",
+    limit = 100,
+    cursor?: string,
+  ) {
+    return this.request(
+      "GET",
+      withQuery(`workspaces/${validId(workspaceId)}/loops`, {
+        view,
+        limit,
+        cursor,
+      }),
+      pageSchema(loopSchema),
+    );
+  }
+  public getLoop(workspaceId: string, loopId: string) {
+    return this.request(
+      "GET",
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}`,
+      loopDetailSchema,
+    );
+  }
+  public createLoop(workspaceId: string, document: string, key: string) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops`,
+      { document },
+      key,
+      loopMutationSchema,
+    );
+  }
+  public updateLoop(
+    workspaceId: string,
+    loopId: string,
+    document: string,
+    expectedDefinitionVersion: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/definition`,
+      { document, expectedDefinitionVersion },
+      key,
+      loopMutationSchema,
+      undefined,
+      "PUT",
+    );
+  }
+  public enableLoop(
+    workspaceId: string,
+    loopId: string,
+    expectedDefinitionVersion: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/enable`,
+      { expectedDefinitionVersion, authorizationConfirmed: true },
+      key,
+      loopMutationSchema,
+    );
+  }
+  public disableLoop(workspaceId: string, loopId: string, key: string) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/disable`,
+      {},
+      key,
+      loopMutationSchema,
+    );
+  }
+  public deleteLoop(workspaceId: string, loopId: string, key: string) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}`,
+      undefined,
+      key,
+      z.looseObject({ loopId: z.guid(), deleted: z.boolean() }),
+      undefined,
+      "DELETE",
+    );
+  }
+  public runLoop(
+    workspaceId: string,
+    loopId: string,
+    body: object,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/run`,
+      body,
+      key,
+      loopRunMutationSchema,
+    );
+  }
+  public rerunLoop(
+    workspaceId: string,
+    loopId: string,
+    runId: string,
+    mode: string,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/runs/${validId(runId)}/rerun`,
+      { mode },
+      key,
+      loopRunMutationSchema,
+    );
+  }
+  public listLoopRuns(
+    workspaceId: string,
+    loopId: string,
+    limit = 100,
+    cursor?: string,
+  ) {
+    return this.request(
+      "GET",
+      withQuery(
+        `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/runs`,
+        { limit, cursor },
+      ),
+      pageSchema(loopRunSchema),
+    );
+  }
+  public listLoopDecisions(
+    workspaceId: string,
+    loopId: string,
+    limit = 100,
+    cursor?: string,
+  ) {
+    return this.request(
+      "GET",
+      withQuery(
+        `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/decisions`,
+        { limit, cursor },
+      ),
+      pageSchema(loopDecisionSchema),
+    );
+  }
+  public listLoopLanes(
+    workspaceId: string,
+    loopId: string,
+    limit = 100,
+    cursor?: string,
+  ) {
+    return this.request(
+      "GET",
+      withQuery(
+        `workspaces/${validId(workspaceId)}/loops/${validId(loopId)}/lanes`,
+        { limit, cursor },
+      ),
+      pageSchema(loopLaneSchema),
+    );
+  }
+  public listLoopEventDescriptors(workspaceId: string) {
+    return this.request(
+      "GET",
+      `workspaces/${validId(workspaceId)}/loop-event-descriptors`,
+      z.looseObject({
+        items: z.array(
+          z.looseObject({
+            pluginId: z.string(),
+            subjectFamilies: z.array(z.unknown()),
+          }),
+        ),
+      }),
+    );
+  }
+  public previewLoopSchedule(workspaceId: string, body: object) {
+    return this.request(
+      "POST",
+      `workspaces/${validId(workspaceId)}/loop-schedule-preview`,
+      z.looseObject({ instants: z.array(z.string()) }),
+      body,
+    );
+  }
+  public listWorkerRoles(workspaceId: string, limit = 100, cursor?: string) {
+    return this.request(
+      "GET",
+      withQuery(`workspaces/${validId(workspaceId)}/worker-roles`, {
+        limit,
+        cursor,
+      }),
+      pageSchema(roleSchema),
+    );
+  }
+  public getWorkerRole(workspaceId: string, roleKey: string) {
+    return this.request(
+      "GET",
+      `workspaces/${validId(workspaceId)}/worker-roles/${validRoleKey(roleKey)}`,
+      roleDetailSchema,
+    );
+  }
+  public createWorkerRole(workspaceId: string, body: object, key: string) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/worker-roles`,
+      body,
+      key,
+      roleSchema,
+    );
+  }
+  public updateWorkerRole(
+    workspaceId: string,
+    roleKey: string,
+    body: object,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/worker-roles/${validRoleKey(roleKey)}`,
+      body,
+      key,
+      roleSchema,
+      undefined,
+      "PUT",
+    );
+  }
+  public deleteWorkerRole(workspaceId: string, roleKey: string, key: string) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/worker-roles/${validRoleKey(roleKey)}`,
+      undefined,
+      key,
+      z.looseObject({ key: z.string(), deleted: z.boolean() }),
+      undefined,
+      "DELETE",
+    );
+  }
+  public setTaskAutoWake(taskId: string, enabled: boolean, key: string) {
+    return this.mutate(
+      `tasks/${validId(taskId)}/auto-wake`,
+      { enabled },
+      key,
+      z.looseObject({ taskId: z.guid(), autoWakeOnResume: z.boolean() }),
+      undefined,
+      "PUT",
+    );
   }
 
   public listWorkspaces(
@@ -665,4 +943,10 @@ async function delay(
       );
     throw error;
   }
+}
+
+function validRoleKey(value: string): string {
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(value))
+    throw new CliError("Invalid worker role key.", ExitCode.usage);
+  return encodeURIComponent(value);
 }
