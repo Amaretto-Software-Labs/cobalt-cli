@@ -341,6 +341,96 @@ export function createProgram(runtime: Runtime): Command {
     );
 
   addTaskCreate(task, runtime);
+  addProcessCommands(root, runtime);
+  const queue = task
+    .command("queue")
+    .description("Inspect or manage task admission.");
+  queue
+    .command("list")
+    .option("--all")
+    .action(async (options: PageOptions, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        page(context, "taskAdmission", options, (cursor) =>
+          context.api.listTaskQueue(context.requireWorkspace(), cursor),
+        ),
+      ),
+    );
+  for (const action of [
+    "hold",
+    "release",
+    "cancel",
+    "retry",
+    "move",
+  ] as const) {
+    const cmd = queue
+      .command(`${action} <task-id>`)
+      .requiredOption("--admission-id <uuid>")
+      .requiredOption(
+        "--version <number>",
+        "Current admission version.",
+        parsePositive,
+      );
+    if (action === "move")
+      cmd
+        .addOption(
+          new Option("--direction <direction>").choices(["earlier", "later"]),
+        )
+        .option("--before-entry <uuid>");
+    cmd.action(
+      async (
+        taskId: string,
+        options: {
+          admissionId: string;
+          version: number;
+          direction?: string;
+          beforeEntry?: string;
+        },
+        command,
+      ) =>
+        mutation(
+          runtime,
+          command,
+          (context, key) => {
+            if (
+              action === "move" &&
+              Boolean(options.direction) === Boolean(options.beforeEntry)
+            )
+              throw new UsageError(
+                "For move, supply exactly one of --direction or --before-entry.",
+              );
+            return context.api.mutateTaskAdmission(
+              taskId,
+              action,
+              {
+                admissionId: validId(options.admissionId),
+                version: options.version,
+                ...(options.direction ? { direction: options.direction } : {}),
+                ...(options.beforeEntry
+                  ? { beforeEntryId: validId(options.beforeEntry) }
+                  : {}),
+              },
+              key,
+            );
+          },
+          "taskAdmission",
+        ),
+    );
+  }
+
+  task
+    .command("auto-wake <task-id> <state>")
+    .description("Set saved resume restoration: on or off.")
+    .action(async (taskId: string, state: string, _options, command) => {
+      if (!["on", "off"].includes(state))
+        throw new UsageError("State must be on or off.");
+      await mutation(
+        runtime,
+        command,
+        (context, key) =>
+          context.api.setTaskAutoWake(taskId, state === "on", key),
+        "taskAutoWake",
+      );
+    });
   addMessageMutation(
     task,
     runtime,
@@ -350,6 +440,7 @@ export function createProgram(runtime: Runtime): Command {
         taskId,
         {
           message: await readMessage(options),
+          ...(options.role ? { roleKey: options.role } : {}),
           ...(hasAgentSelection(options)
             ? {
                 agent: await resolveAgent(
@@ -485,6 +576,380 @@ export function createProgram(runtime: Runtime): Command {
   return root;
 }
 
+function addProcessCommands(root: Command, runtime: Runtime): void {
+  const loop = root
+    .command("loop")
+    .description("Inspect and manage workspace Loops.");
+  loop
+    .command("list")
+    .addOption(
+      new Option("--view <view>")
+        .choices(["mine", "workspace"])
+        .default("mine"),
+    )
+    .option("--all")
+    .addOption(limitOption(100))
+    .action(async (options: PageOptions & { view: string }, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        page(context, "loop", options, (cursor) =>
+          context.api.listLoops(
+            context.requireWorkspace(),
+            options.view,
+            options.limit,
+            cursor,
+          ),
+        ),
+      ),
+    );
+  loop
+    .command("get <loop-id>")
+    .action(async (id: string, _options, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        context.output.result(
+          "loop",
+          await context.api.getLoop(context.requireWorkspace(), id),
+        ),
+      ),
+    );
+  for (const action of ["create", "update"] as const) {
+    const cmd = loop
+      .command(action === "create" ? "create" : "update <loop-id>")
+      .requiredOption(
+        "--document-file <path>",
+        "Complete canonical Loop document.",
+      );
+    if (action === "update")
+      cmd.requiredOption(
+        "--expected-version <number>",
+        "Version read by loop get.",
+        parsePositive,
+      );
+    cmd.action(async (...args: unknown[]) => {
+      const command = args.at(-1) as Command;
+      const options = command.opts() as {
+        documentFile: string;
+        expectedVersion: number;
+      };
+      await execute(
+        runtime,
+        command,
+        action === "create" ? createScopes : operateScopes,
+        true,
+        async (context) => {
+          const document = await readDefinitionFile(options.documentFile);
+          const key = mutationKey(command);
+          context.output.beginMutation(key);
+          const result =
+            action === "create"
+              ? await context.api.createLoop(
+                  context.requireWorkspace(),
+                  document,
+                  key,
+                )
+              : await context.api.updateLoop(
+                  context.requireWorkspace(),
+                  args[0] as string,
+                  document,
+                  options.expectedVersion,
+                  key,
+                );
+          context.output.result("loop", result.value, key, result.outcome);
+        },
+      );
+    });
+  }
+  loop
+    .command("enable <loop-id>")
+    .description(
+      "Authorize future runs as your identity and enable this exact version.",
+    )
+    .requiredOption(
+      "--expected-version <number>",
+      "Version read by loop get.",
+      parsePositive,
+    )
+    .action(async (id: string, options: { expectedVersion: number }, command) =>
+      mutation(
+        runtime,
+        command,
+        (context, key) =>
+          context.api.enableLoop(
+            context.requireWorkspace(),
+            id,
+            options.expectedVersion,
+            key,
+          ),
+        "loop",
+      ),
+    );
+  for (const action of ["disable", "delete"] as const)
+    loop
+      .command(`${action} <loop-id>`)
+      .action(async (id: string, _options, command) =>
+        mutation(
+          runtime,
+          command,
+          (context, key) =>
+            action === "disable"
+              ? context.api.disableLoop(context.requireWorkspace(), id, key)
+              : context.api.deleteLoop(context.requireWorkspace(), id, key),
+          "loop",
+        ),
+      );
+  loop
+    .command("run <loop-id>")
+    .option("--test")
+    .option("--force-fresh-task")
+    .option("--subject-kind <kind>")
+    .option("--subject-id <id>")
+    .option("--subject-locator <locator>")
+    .action(
+      async (
+        id: string,
+        options: {
+          test?: boolean;
+          forceFreshTask?: boolean;
+          subjectKind?: string;
+          subjectId?: string;
+          subjectLocator?: string;
+        },
+        command,
+      ) =>
+        execute(runtime, command, createScopes, true, async (context) => {
+          if (
+            Boolean(options.subjectKind) !== Boolean(options.subjectId) ||
+            (options.subjectLocator && !options.subjectId)
+          )
+            throw new UsageError(
+              "Supply --subject-kind and --subject-id together.",
+            );
+          const key = mutationKey(command);
+          context.output.beginMutation(key);
+          const result = await context.api.runLoop(
+            context.requireWorkspace(),
+            id,
+            {
+              test: Boolean(options.test),
+              forceFreshTask: Boolean(options.forceFreshTask),
+              ...(options.subjectId
+                ? {
+                    subject: {
+                      kind: options.subjectKind,
+                      externalId: options.subjectId,
+                      locator: options.subjectLocator ?? null,
+                    },
+                  }
+                : {}),
+            },
+            key,
+          );
+          context.output.result("loopRun", result.value, key, result.outcome);
+        }),
+    );
+  loop
+    .command("rerun <loop-id> <run-id>")
+    .addOption(
+      new Option("--mode <mode>")
+        .choices(["same_inputs", "current_definition"])
+        .makeOptionMandatory(),
+    )
+    .action(
+      async (id: string, runId: string, options: { mode: string }, command) =>
+        execute(runtime, command, createScopes, true, async (context) => {
+          const key = mutationKey(command);
+          context.output.beginMutation(key);
+          const result = await context.api.rerunLoop(
+            context.requireWorkspace(),
+            id,
+            runId,
+            options.mode,
+            key,
+          );
+          context.output.result("loopRun", result.value, key, result.outcome);
+        }),
+    );
+  for (const action of ["runs", "decisions", "lanes"] as const)
+    loop
+      .command(`${action} <loop-id>`)
+      .option("--all")
+      .addOption(limitOption(100))
+      .action(async (id: string, options: PageOptions, command) =>
+        execute(runtime, command, readScopes, true, async (context) => {
+          const workspace = context.requireWorkspace();
+          if (action === "runs")
+            await page(context, "loopRun", options, (cursor) =>
+              context.api.listLoopRuns(workspace, id, options.limit, cursor),
+            );
+          else if (action === "decisions")
+            await page(context, "loopDecision", options, (cursor) =>
+              context.api.listLoopDecisions(
+                workspace,
+                id,
+                options.limit,
+                cursor,
+              ),
+            );
+          else
+            await page(context, "loopLane", options, (cursor) =>
+              context.api.listLoopLanes(workspace, id, options.limit, cursor),
+            );
+        }),
+      );
+  loop
+    .command("descriptors")
+    .action(async (_options, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        context.output.result(
+          "loopEventCatalog",
+          await context.api.listLoopEventDescriptors(
+            context.requireWorkspace(),
+          ),
+        ),
+      ),
+    );
+  loop
+    .command("preview")
+    .requiredOption("--timezone <timezone>")
+    .requiredOption("--dtstart <local-time>")
+    .option("--rrule <rule>")
+    .action(
+      async (
+        options: { timezone: string; dtstart: string; rrule?: string },
+        command,
+      ) =>
+        execute(runtime, command, readScopes, true, async (context) =>
+          context.output.result(
+            "loopSchedule",
+            await context.api.previewLoopSchedule(
+              context.requireWorkspace(),
+              options,
+            ),
+          ),
+        ),
+    );
+  const role = root
+    .command("role")
+    .description("Inspect and manage versioned workspace worker roles.");
+  role
+    .command("list")
+    .option("--all")
+    .addOption(limitOption(100))
+    .action(async (options: PageOptions, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        page(context, "workerRole", options, (cursor) =>
+          context.api.listWorkerRoles(
+            context.requireWorkspace(),
+            options.limit,
+            cursor,
+          ),
+        ),
+      ),
+    );
+  role
+    .command("get <key>")
+    .action(async (key: string, _options, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        context.output.result(
+          "workerRole",
+          await context.api.getWorkerRole(context.requireWorkspace(), key),
+        ),
+      ),
+    );
+  for (const action of ["create", "update"] as const) {
+    const cmd = role
+      .command(`${action} <key>`)
+      .requiredOption("--name <name>")
+      .requiredOption("--description <description>")
+      .requiredOption("--instructions-file <path>");
+    if (action === "update")
+      cmd.requiredOption(
+        "--expected-revision <number>",
+        "Revision read by role get.",
+        parsePositive,
+      );
+    cmd.action(
+      async (
+        roleKey: string,
+        options: {
+          name: string;
+          description: string;
+          instructionsFile: string;
+          expectedRevision?: number;
+        },
+        command,
+      ) =>
+        execute(
+          runtime,
+          command,
+          action === "create" ? createScopes : operateScopes,
+          true,
+          async (context) => {
+            const body = {
+              name: options.name,
+              description: options.description,
+              instructions: await readDefinitionFile(options.instructionsFile),
+            };
+            const key = mutationKey(command);
+            context.output.beginMutation(key);
+            const result =
+              action === "create"
+                ? await context.api.createWorkerRole(
+                    context.requireWorkspace(),
+                    { ...body, key: roleKey },
+                    key,
+                  )
+                : await context.api.updateWorkerRole(
+                    context.requireWorkspace(),
+                    roleKey,
+                    { ...body, expectedRevision: options.expectedRevision },
+                    key,
+                  );
+            context.output.result(
+              "workerRole",
+              result.value,
+              key,
+              result.outcome,
+            );
+          },
+        ),
+    );
+  }
+  role
+    .command("delete <key>")
+    .action(async (roleKey: string, _options, command) =>
+      mutation(
+        runtime,
+        command,
+        (context, key) =>
+          context.api.deleteWorkerRole(
+            context.requireWorkspace(),
+            roleKey,
+            key,
+          ),
+        "workerRole",
+      ),
+    );
+}
+
+async function readDefinitionFile(path: string): Promise<string> {
+  const stat = await fs.stat(path).catch(() => undefined);
+  if (!stat?.isFile() || stat.size > 1_048_576)
+    throw new UsageError(
+      "Definition must be a readable regular UTF-8 file of at most 1 MiB.",
+    );
+  const bytes = await fs.readFile(path);
+  if (bytes.length > 1_048_576)
+    throw new UsageError("Definition must be at most 1 MiB.");
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new UsageError("Definition must be valid UTF-8.");
+  }
+  if (!text.trim()) throw new UsageError("Definition must not be empty.");
+  return text;
+}
+
 function addTaskCreate(task: Command, runtime: Runtime): void {
   task
     .command("create")
@@ -494,6 +959,20 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
     .option("--repo <repository...>")
     .option("--active-repo <repository>")
     .option("--branch <branch>")
+    .option("--pull-request <number>", "Existing PR number.", parsePositive)
+    .option("--default-role <key>")
+    .option("--role <key>")
+    .option(
+      "--no-auto-wake",
+      "Disable generic resume restoration for finite workers.",
+    )
+    .addOption(
+      new Option("--computer-idle-policy <policy>").choices([
+        "idle_timeout",
+        "suspend_after_turn",
+      ]),
+    )
+    .option("--on-hold", "Create without admitting compute until released.")
     .option("--agent <agent>")
     .option("--model <model>")
     .option("--reasoning <effort>")
@@ -519,6 +998,10 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
         )
           throw new UsageError(
             "Each --repo must identify a unique repository.",
+          );
+        if (options.pullRequest && (options.branch || repoValues.length !== 1))
+          throw new UsageError(
+            "--pull-request requires one --repo and cannot be combined with --branch.",
           );
         if (options.branch && repoValues.length !== 1)
           throw new UsageError("--branch requires exactly one --repo.");
@@ -562,16 +1045,31 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
         );
         const request = {
           message: await readMessage(options),
+          ...(options.role ? { roleKey: options.role } : {}),
           agent,
           title: options.title ?? null,
           visibility: options.visibility,
           retentionMode: options.retention,
+          autoWakeOnResume: options.autoWake,
+          ...(options.onHold ? { createOnHold: true } : {}),
+          ...(options.defaultRole
+            ? { defaultRoleKey: options.defaultRole }
+            : {}),
+          ...(options.computerIdlePolicy
+            ? { computerIdlePolicy: options.computerIdlePolicy }
+            : {}),
           checkouts: repos.map((repo) => ({
             repositoryId: repo.id,
             isActive: repo.id === activeId,
             source: {
-              kind: options.branch ? "branch" : "default",
-              value: options.branch ?? null,
+              kind: options.pullRequest
+                ? "pull_request"
+                : options.branch
+                  ? "branch"
+                  : "default",
+              value: options.pullRequest
+                ? String(options.pullRequest)
+                : (options.branch ?? null),
             },
           })),
           ...(options.cpu ? { cpuCores: options.cpu } : {}),
@@ -608,6 +1106,7 @@ function addMessageMutation(
 ): void {
   task
     .command(`${name} <task-id>`)
+    .option("--role <key>")
     .option("--agent <agent>")
     .option("--model <model>")
     .option("--reasoning <effort>")
@@ -897,6 +1396,7 @@ interface AgentOptions {
   reasoning?: string;
 }
 interface MessageOptions {
+  role?: string;
   message?: string;
   messageFile?: string;
   stdin?: boolean;
@@ -908,6 +1408,11 @@ interface CreateOptions extends AgentOptions, MessageOptions {
   repo?: string[];
   activeRepo?: string;
   branch?: string;
+  pullRequest?: number;
+  defaultRole?: string;
+  autoWake: boolean;
+  onHold?: boolean;
+  computerIdlePolicy?: string;
   cpu?: number;
   memory?: number;
 }
@@ -1031,11 +1536,12 @@ function parseDuration(value: string): number {
 function completion(shell: string): string | undefined {
   if (shell === "bash")
     return `_cobalt_complete() {
-  local commands="interactive auth workspace repo agent task completion version"
+  local commands="interactive auth workspace repo agent task loop role completion version"
   local auth="login logout status" workspace="list use current" repo="list" agent="list"
-  local task="list get search create messages message-search events send steer cancel suspend resume delete wait follow open"
+  local task="list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open"
+  local loop="list get create update enable disable delete run rerun runs decisions lanes descriptors preview" role="list get create update delete"
   local previous="\${COMP_WORDS[COMP_CWORD-1]}" choices="$commands"
-  case "\${COMP_WORDS[1]}" in auth) choices="$auth";; workspace) choices="$workspace";; repo) choices="$repo";; agent) choices="$agent";; task) choices="$task";; esac
+  case "\${COMP_WORDS[1]}" in auth) choices="$auth";; workspace) choices="$workspace";; repo) choices="$repo";; agent) choices="$agent";; task) choices="$task";; loop) choices="$loop";; role) choices="$role";; esac
   COMPREPLY=( $(compgen -W "$choices --environment --workspace --json --jsonl --quiet --no-color --trace --idempotency-key --help --version" -- "\${COMP_WORDS[COMP_CWORD]}") )
 }
 complete -F _cobalt_complete cobalt`;
@@ -1043,13 +1549,15 @@ complete -F _cobalt_complete cobalt`;
     return `#compdef cobalt
 _cobalt() {
   local -a commands
-  commands=(interactive auth workspace repo agent task completion version)
+  commands=(interactive auth workspace repo agent task loop role completion version)
   if (( CURRENT == 2 )); then _describe command commands; return; fi
   case $words[2] in
     auth) _values action login logout status;;
     workspace) _values action list use current;;
     repo|agent) _values action list;;
-    task) _values action list get search create messages message-search events send steer cancel suspend resume delete wait follow open;;
+    task) _values action list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open;;
+    loop) _values action list get create update enable disable delete run rerun runs decisions lanes descriptors preview;;
+    role) _values action list get create update delete;;
     completion) _values shell bash zsh fish powershell;;
     *) _arguments '*:argument:';;
   esac
@@ -1057,16 +1565,18 @@ _cobalt() {
 compdef _cobalt cobalt`;
   if (shell === "fish")
     return `complete -c cobalt -f
-complete -c cobalt -n '__fish_use_subcommand' -a 'interactive auth workspace repo agent task completion version'
+complete -c cobalt -n '__fish_use_subcommand' -a 'interactive auth workspace repo agent task loop role completion version'
 complete -c cobalt -n '__fish_seen_subcommand_from auth' -a 'login logout status'
 complete -c cobalt -n '__fish_seen_subcommand_from workspace' -a 'list use current'
 complete -c cobalt -n '__fish_seen_subcommand_from repo agent' -a 'list'
-complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'list get search create messages message-search events send steer cancel suspend resume delete wait follow open'
+complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open'
+complete -c cobalt -n '__fish_seen_subcommand_from loop' -a 'list get create update enable disable delete run rerun runs decisions lanes descriptors preview'
+complete -c cobalt -n '__fish_seen_subcommand_from role' -a 'list get create update delete'
 complete -c cobalt -l environment -a 'prod dev demo local'`;
   if (shell === "powershell")
     return `Register-ArgumentCompleter -Native -CommandName cobalt -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $words = @('interactive','auth','workspace','repo','agent','task','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','prod','dev','demo','local','bash','zsh','fish','powershell')
+  $words = @('interactive','auth','workspace','repo','agent','task','loop','role','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','auto-wake','queue','hold','release','retry','move','update','enable','disable','run','rerun','schedules','preview','descriptors','runs','decisions','lanes','prod','dev','demo','local','bash','zsh','fish','powershell')
   $words | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { [System.Management.Automation.CompletionResult]::new($_,$_, 'ParameterValue', $_) }
 }`;
   return undefined;

@@ -54,7 +54,11 @@ workspace list|use|current
 repo list
 agent list
 task list|get|search|create|messages|message-search|events
-task send|steer|cancel|suspend|resume|wait|follow|open
+task send|steer|cancel|suspend|resume|auto-wake|delete|wait|follow|open
+task queue list|hold|release|cancel|retry|move
+loop list|get|create|update|enable|disable|delete|run|rerun
+loop runs|decisions|lanes|descriptors|preview
+role list|get|create|update|delete
 interactive
 completion bash|zsh|fish|powershell
 version
@@ -66,6 +70,61 @@ Interactive mode retains an ambiguous mutation's idempotency key and directs you
 
 Exit codes are stable: `0` success, `2` usage, `3` authentication, `4` authorization, `5` not found, `6` conflict, `7` rate limited, `8` unavailable, `9` admission, `10` configuration, and `130` interrupted.
 
+## Loops and worker roles
+
+Read the current definition before replacing it. Updates require its observed
+version/revision and one complete file; creates start no work. Enabling a Loop
+authorizes its future unattended runs as your current identity.
+
+```bash
+cobalt loop list --all
+cobalt loop get <loop-id> --json
+cobalt loop update <loop-id> --document-file review.md --expected-version 7
+cobalt loop enable <loop-id> --expected-version 8
+cobalt loop runs <loop-id> --all
+cobalt loop descriptors --json
+
+cobalt role list --all
+cobalt role get pr-reviewer --json
+cobalt role update pr-reviewer --name "PR Reviewer" --description "Review PRs" \
+  --instructions-file reviewer.md --expected-revision 2
+
+cobalt task create --repo <repository-id> --pull-request 184 \
+  --title "[PR Review 184] Review current revision" --retention persistent \
+  --default-role pr-reviewer --role pr-reviewer --no-auto-wake \
+  --computer-idle-policy suspend_after_turn --message "Review the exact head/base."
+cobalt task send <task-id> --role pr-reviewer --message "Review the next revision."
+cobalt task auto-wake <task-id> off
+```
+
+Task creation supports `--on-hold`; inspect and release admission through
+`cobalt task queue`. Role selection belongs to task creation or message send.
+`task resume` restores compute and does not accept a role. Auto-wake controls
+generic environment restoration on resume; it is separate from automatic
+suspension after a turn. Server-side permissions, capacity, and immutable role
+snapshots apply to every command.
+
+## Reuse the branded OAuth callback in an MCP client
+
+Desktop MCP clients can use the same renderer and response headers as the CLI:
+
+```js
+import {
+  oauthCallbackResponseHeaders,
+  renderOAuthCallbackPage,
+} from "@amaretto-software-labs/cobalt-cli/oauth-callback";
+
+// Only after the client's OAuth state/PKCE and token validation succeed:
+response.writeHead(200, oauthCallbackResponseHeaders);
+response.end(renderOAuthCallbackPage("success", undefined, "mcp"));
+```
+
+The shared renderer supports `success`, `cancelled`, `waiting`, `invalid`,
+`timeout`, and `failed` states. The MCP variant directs the user back to their
+desktop app. It performs no OAuth operations and never receives tokens or raw
+provider error details. The client owns validation, token storage, and listener
+cleanup. Pass a local retry path only when the client implements that route.
+
 ## Development
 
 ```bash
@@ -74,7 +133,7 @@ pnpm install --frozen-lockfile
 pnpm verify
 ```
 
-[`openapi/v1.json`](openapi/v1.json) is the canonical Cobalt External API schema copied from the product repository. `pnpm openapi:check` fails if its 16-operation catalog drifts from the client mapping.
+[`openapi/v1.json`](openapi/v1.json) is the canonical Cobalt External API schema copied from the product repository. `pnpm openapi:check` fails if its 39 CLI operations drift from the client mapping. The five OAuth browser-session operations are accounted for separately because they belong to the browser extension.
 
 ## Releasing
 

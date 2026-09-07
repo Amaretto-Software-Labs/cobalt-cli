@@ -17,6 +17,7 @@ const fields = [
   "homepage",
   "bugs",
   "bin",
+  "exports",
   "engines",
   "dependencies",
   "keywords",

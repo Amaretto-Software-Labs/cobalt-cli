@@ -6,7 +6,7 @@ import { runOAuthSession } from "./oauth-session.js";
 import {
   oauthCallbackResponseHeaders,
   renderOAuthCallbackPage,
-} from "./auth.js";
+} from "./oauth-callback.js";
 
 const sessions: Array<{ abort: AbortController; pending: Promise<unknown> }> =
   [];

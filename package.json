@@ -12,6 +12,12 @@
   "bugs": {
     "url": "https://github.com/Amaretto-Software-Labs/cobalt-cli/issues"
   },
+  "exports": {
+    "./oauth-callback": {
+      "types": "./dist/oauth-callback.d.ts",
+      "import": "./dist/oauth-callback.js"
+    }
+  },
   "bin": {
     "cobalt": "./dist/main.js"
   },

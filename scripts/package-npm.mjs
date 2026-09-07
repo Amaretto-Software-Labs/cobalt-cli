@@ -40,6 +40,7 @@ const runtime = {
   homepage: source.homepage,
   bugs: source.bugs,
   bin: source.bin,
+  exports: source.exports,
   engines: source.engines,
   dependencies: source.dependencies,
   keywords: source.keywords,
