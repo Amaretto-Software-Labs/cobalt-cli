@@ -4,6 +4,66 @@ import { readFile } from "node:fs/promises";
 
 const expected = new Map([
   [
+    "GET /v1/environments/{environmentId}/sidecars/{sidecarId}/diagnostics",
+    ["GetSidecarDiagnostics", "sidecarDiagnostics"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/pr-gates",
+    ["InspectPrGates", "inspectPrGates"],
+  ],
+  [
+    "PUT /v1/workspaces/{workspaceId}/pr-gates",
+    ["ConfigurePrGate", "configurePrGate"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/pr-gates/{registrationId}/actions",
+    ["PrGateAction", "prGateAction"],
+  ],
+  [
+    "GET /v1/workspaces/{workspaceId}/environments",
+    ["ListEnvironments", "listEnvironments"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/environments",
+    ["CreateEnvironment", "createEnvironment"],
+  ],
+  [
+    "GET /v1/environments/{environmentId}",
+    ["GetEnvironment", "getEnvironment"],
+  ],
+  [
+    "PUT /v1/environments/{environmentId}",
+    ["UpdateEnvironment", "updateEnvironment"],
+  ],
+  [
+    "GET /v1/environment-operations/{operationId}",
+    ["GetEnvironmentOperation", "getEnvironmentOperation"],
+  ],
+  [
+    "POST /v1/environments/{environmentId}/actions/{action}",
+    ["EnvironmentAction", "environmentAction"],
+  ],
+  [
+    "POST /v1/environments/{environmentId}/sidecars/{sidecarId}/actions/{action}",
+    ["SidecarAction", "sidecarAction"],
+  ],
+  [
+    "GET /v1/tasks/{taskId}/environment-attachments",
+    ["ListTaskEnvironmentAttachments", "listTaskEnvironmentAttachments"],
+  ],
+  [
+    "POST /v1/tasks/{taskId}/environment-attachments",
+    ["AttachTaskEnvironment", "attachTaskEnvironment"],
+  ],
+  [
+    "DELETE /v1/tasks/{taskId}/environment-attachments/{attachmentId}",
+    ["DetachTaskEnvironment", "detachTaskEnvironment"],
+  ],
+  [
+    "PUT /v1/tasks/{taskId}/environment-dns-default",
+    ["SetTaskEnvironmentDnsDefault", "setTaskEnvironmentDnsDefault"],
+  ],
+  [
     "GET /v1/workspaces/{workspaceId}/task-queue",
     ["ListTaskQueue", "listTaskQueue"],
   ],
@@ -143,6 +203,73 @@ const browserOperations = new Map([
   ["POST /v1/browser-tool-calls/{callId}/complete", "CompleteBrowserToolCall"],
 ]);
 const mismatches = [];
+const schemas = document.components?.schemas ?? {};
+for (const [name, properties] of [
+  [
+    "CreateTaskRequest",
+    ["environmentIds", "defaultDnsEnvironmentId", "environmentRepair"],
+  ],
+  ["SendMessageRequest", ["environmentRepair"]],
+  [
+    "EnvironmentDefinitionRequest",
+    ["name", "description", "sidecars", "authorizeService"],
+  ],
+  [
+    "SidecarDefinitionRequest",
+    [
+      "templateId",
+      "templateRevision",
+      "imageDigest",
+      "secretReferences",
+      "command",
+      "initializeCommand",
+      "readiness",
+    ],
+  ],
+  [
+    "TaskEnvironmentAttachmentView",
+    ["desiredMembership", "connectivity", "connectionBindings"],
+  ],
+]) {
+  for (const property of properties)
+    if (!schemas[name]?.properties?.[property])
+      mismatches.push(`${name}.${property}: missing public environment field`);
+}
+for (const name of [
+  "UpdateEnvironmentRequest",
+  "EnvironmentActionRequest",
+  "SetEnvironmentDnsDefaultRequest",
+])
+  if (
+    !schemas[name]?.required?.includes("expectedGeneration") ||
+    schemas[name]?.properties?.expectedGeneration?.format !== "int64"
+  )
+    mismatches.push(`${name}: missing required int64 generation fence`);
+if (
+  schemas.CreateTaskRequest?.properties?.environmentIds?.items?.format !==
+  "uuid"
+)
+  mismatches.push(
+    "CreateTaskRequest.environmentIds: expected UUID membership set",
+  );
+if (
+  !schemas.SetEnvironmentDnsDefaultRequest?.required?.includes(
+    "attachmentId",
+  ) ||
+  !schemas.SetEnvironmentDnsDefaultRequest?.properties?.attachmentId?.type?.includes(
+    "null",
+  )
+)
+  mismatches.push(
+    "SetEnvironmentDnsDefaultRequest: DNS selection must be explicitly nullable",
+  );
+if (
+  schemas.SidecarDefinitionRequest?.properties?.environment ||
+  schemas.EnvironmentDefinitionRequest?.properties?.environment
+)
+  mismatches.push(
+    "Environment definitions must expose secretReferences rather than plaintext launch environment values",
+  );
 for (const [route, operation] of browserOperations) {
   if (actual.get(route) !== operation)
     mismatches.push(`${route}: browser contract changed`);
