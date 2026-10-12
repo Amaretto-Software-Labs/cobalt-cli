@@ -966,12 +966,6 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
       "--no-auto-wake",
       "Disable generic resume restoration for finite workers.",
     )
-    .addOption(
-      new Option("--computer-idle-policy <policy>").choices([
-        "idle_timeout",
-        "suspend_after_turn",
-      ]),
-    )
     .option("--on-hold", "Create without admitting compute until released.")
     .option("--agent <agent>")
     .option("--model <model>")
@@ -1054,9 +1048,6 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
           ...(options.onHold ? { createOnHold: true } : {}),
           ...(options.defaultRole
             ? { defaultRoleKey: options.defaultRole }
-            : {}),
-          ...(options.computerIdlePolicy
-            ? { computerIdlePolicy: options.computerIdlePolicy }
             : {}),
           checkouts: repos.map((repo) => ({
             repositoryId: repo.id,
@@ -1412,7 +1403,6 @@ interface CreateOptions extends AgentOptions, MessageOptions {
   defaultRole?: string;
   autoWake: boolean;
   onHold?: boolean;
-  computerIdlePolicy?: string;
   cpu?: number;
   memory?: number;
 }
