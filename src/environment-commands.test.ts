@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { resolveEnvironment } from "./environment.js";
+import { Output } from "./output.js";
 import { runProgram } from "./program.js";
 import type { Context, Runtime } from "./runtime.js";
 
@@ -454,5 +456,156 @@ describe("workspace environment command contracts", () => {
       { message: "hello", environmentRepair: true },
       key,
     );
+  });
+});
+
+describe("environment operation structured failure output", () => {
+  function structuredSetup(getEnvironmentOperation: unknown) {
+    const { runtime, context } = setup({ getEnvironmentOperation });
+    context.output = new Output(resolveEnvironment("prod"), "json");
+    const stdout = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    return { runtime, stdout, stderr };
+  }
+
+  it.each(["failed", "cancelled", "superseded"])(
+    "prints the complete %s observation before returning a conflict",
+    async (status) => {
+      const observation = {
+        id: key,
+        environmentId: environment,
+        generation: 7,
+        status,
+        failureCode: "probe_failed",
+      };
+      const getEnvironmentOperation = vi.fn(async () => observation);
+      const { runtime, stdout, stderr } = structuredSetup(
+        getEnvironmentOperation,
+      );
+      expect(
+        await runProgram(runtime, [
+          "environment",
+          "operation",
+          key,
+          "--wait",
+          "--json",
+        ]),
+      ).toBe(6);
+      expect(stdout).toHaveBeenCalledOnce();
+      expect(JSON.parse(String(stdout.mock.calls[0]![0]))).toMatchObject({
+        kind: "environmentOperation",
+        data: observation,
+      });
+      expect(JSON.parse(String(stderr.mock.calls[0]![0]))).toMatchObject({
+        exitCode: 6,
+      });
+      expect(getEnvironmentOperation).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("prints the last observation when the wait deadline expires", async () => {
+    vi.useFakeTimers();
+    const observation = {
+      id: key,
+      environmentId: environment,
+      generation: 7,
+      status: "running",
+      failureCode: null,
+    };
+    const { runtime, stdout, stderr } = structuredSetup(
+      vi.fn(async () => observation),
+    );
+    const execution = runProgram(runtime, [
+      "environment",
+      "operation",
+      key,
+      "--wait",
+      "--timeout",
+      "1",
+      "--json",
+    ]);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await execution).toBe(8);
+    expect(stdout).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(stdout.mock.calls[0]![0]))).toMatchObject({
+      kind: "environmentOperation",
+      data: observation,
+    });
+    expect(JSON.parse(String(stderr.mock.calls[0]![0]))).toMatchObject({
+      exitCode: 8,
+    });
+  });
+
+  it("prints the last observation when an in-flight poll times out", async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+    const observation = {
+      id: key,
+      environmentId: environment,
+      generation: 7,
+      status: "pending",
+      failureCode: null,
+    };
+    const getEnvironmentOperation = vi
+      .fn()
+      .mockResolvedValueOnce(observation)
+      .mockImplementationOnce(async () => {
+        controller.abort(new DOMException("Timed out", "TimeoutError"));
+        throw controller.signal.reason;
+      });
+    const { runtime, stdout, stderr } = structuredSetup(
+      getEnvironmentOperation,
+    );
+    const execution = runProgram(runtime, [
+      "environment",
+      "operation",
+      key,
+      "--wait",
+      "--timeout",
+      "3",
+      "--json",
+    ]);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await execution).toBe(8);
+    expect(stdout).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(stdout.mock.calls[0]![0]))).toMatchObject({
+      kind: "environmentOperation",
+      data: observation,
+    });
+    expect(JSON.parse(String(stderr.mock.calls[0]![0]))).toMatchObject({
+      exitCode: 8,
+    });
+  });
+
+  it("prints successful completion once with no error", async () => {
+    const observation = {
+      id: key,
+      generation: 7,
+      status: "succeeded",
+      failureCode: null,
+    };
+    const { runtime, stdout, stderr } = structuredSetup(
+      vi.fn(async () => observation),
+    );
+    expect(
+      await runProgram(runtime, [
+        "environment",
+        "operation",
+        key,
+        "--wait",
+        "--json",
+      ]),
+    ).toBe(0);
+    expect(stdout).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(stdout.mock.calls[0]![0]))).toMatchObject({
+      kind: "environmentOperation",
+      data: observation,
+    });
+    expect(stderr).not.toHaveBeenCalled();
   });
 });

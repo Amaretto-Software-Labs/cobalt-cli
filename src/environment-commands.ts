@@ -88,11 +88,13 @@ export function addEnvironmentCommands(
               .getEnvironmentOperation(operationId, signal)
               .catch((error: unknown) => {
                 if (!signal?.aborted) throw error;
-                if (lastObservation)
+                if (lastObservation) {
                   context.output.result(
                     "environmentOperation",
                     lastObservation,
                   );
+                  context.output.complete();
+                }
                 throw new CliError(
                   "Timed out waiting for the environment operation. Inspect the same operation ID to continue.",
                   ExitCode.unavailable,
@@ -107,6 +109,7 @@ export function addEnvironmentCommands(
               ["failed", "cancelled", "superseded"].includes(operation.status)
             ) {
               context.output.result("environmentOperation", operation);
+              context.output.complete();
               throw new CliError(
                 `Environment operation ended with status ${operation.status}.`,
                 ExitCode.conflict,
@@ -120,6 +123,7 @@ export function addEnvironmentCommands(
             const remaining = deadline - Date.now();
             if (remaining <= 0) {
               context.output.result("environmentOperation", operation);
+              context.output.complete();
               throw new CliError(
                 "Timed out waiting for the environment operation. Inspect the same operation ID to continue.",
                 ExitCode.unavailable,
