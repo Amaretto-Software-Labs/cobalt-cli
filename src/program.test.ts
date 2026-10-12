@@ -10,6 +10,14 @@ afterEach(() => {
 });
 
 describe("command catalog", () => {
+  it("does not offer a task auto-suspend policy", () => {
+    const program = createProgram({} as Runtime);
+    const create = program.commands
+      .find((c) => c.name() === "task")!
+      .commands.find((c) => c.name() === "create")!;
+    expect(create.helpInformation()).not.toContain("--computer-idle-policy");
+  });
+
   it("preserves all public Cobalt command paths", () => {
     const program = createProgram({} as Runtime);
     const paths: string[] = [];

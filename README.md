@@ -92,7 +92,7 @@ cobalt role update pr-reviewer --name "PR Reviewer" --description "Review PRs" \
 cobalt task create --repo <repository-id> --pull-request 184 \
   --title "[PR Review 184] Review current revision" --retention persistent \
   --default-role pr-reviewer --role pr-reviewer --no-auto-wake \
-  --computer-idle-policy suspend_after_turn --message "Review the exact head/base."
+  --message "Review the exact head/base."
 cobalt task send <task-id> --role pr-reviewer --message "Review the next revision."
 cobalt task auto-wake <task-id> off
 ```
@@ -157,3 +157,5 @@ Please report vulnerabilities privately through GitHub Security Advisories. Do n
 ## License
 
 Apache-2.0.
+
+Computer availability is automatic: Borealis suspends idle VMs and activates them for prompts, commands and previews. There is no task auto-suspend option. Workspace concurrency counts active agent turns or commands.
