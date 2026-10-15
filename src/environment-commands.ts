@@ -1,3 +1,4 @@
+import { addEnvironmentImageCommands } from "./environment-image-commands.js";
 import { Command } from "commander";
 import { validId } from "./api.js";
 import { environmentDefinitionRequestSchema } from "./api-environment-schemas.js";
@@ -5,7 +6,7 @@ import { CliError, ExitCode, UsageError } from "./errors.js";
 import type { Context } from "./runtime.js";
 
 type MutationResult = { value: unknown; outcome?: string };
-interface EnvironmentCommandHelpers {
+export interface EnvironmentCommandHelpers {
   execute(
     command: Command,
     scopes: string[],
@@ -213,6 +214,7 @@ export function addEnvironmentCommands(
   const sidecar = environment
     .command("sidecar")
     .description("Manage one sidecar using its environment generation.");
+  addEnvironmentImageCommands(environment, sidecar, helpers);
   sidecar
     .command("diagnostics <environment-id> <sidecar-id>")
     .description(
@@ -263,10 +265,6 @@ export function addEnvironmentCommands(
   attachments
     .command("attach <task-id> <environment-id>")
     .option(
-      "--repair",
-      "Repair an unavailable environment before task admission.",
-    )
-    .option(
       "--bindings-file <path>",
       "JSON map of application variable names to connection templates.",
     )
@@ -274,7 +272,7 @@ export function addEnvironmentCommands(
       async (
         id: string,
         environmentId: string,
-        options: { repair?: boolean; bindingsFile?: string },
+        options: { bindingsFile?: string },
         command,
       ) =>
         result(command, "taskEnvironmentAttachment", async (context, key) => {
@@ -315,7 +313,6 @@ export function addEnvironmentCommands(
           return context.api.attachTaskEnvironment(
             validId(id),
             validId(environmentId),
-            Boolean(options.repair),
             bindings,
             key,
           );
@@ -367,7 +364,7 @@ export function addEnvironmentCommands(
   );
 }
 
-function positiveGeneration(value: string): number {
+export function positiveGeneration(value: string): number {
   if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value)))
     throw new UsageError(
       "Expected generation must be a positive safe integer.",

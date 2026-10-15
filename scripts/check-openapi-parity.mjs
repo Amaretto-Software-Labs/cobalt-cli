@@ -4,6 +4,34 @@ import { readFile } from "node:fs/promises";
 
 const expected = new Map([
   [
+    "GET /v1/workspaces/{workspaceId}/environment-image-sources",
+    ["ListEnvironmentImageSources", "listEnvironmentImageSources"],
+  ],
+  [
+    "POST /v1/workspaces/{workspaceId}/environment-image-sources",
+    ["CreateEnvironmentImageSource", "createEnvironmentImageSource"],
+  ],
+  [
+    "PUT /v1/environment-image-sources/{sourceId}",
+    ["UpdateEnvironmentImageSource", "updateEnvironmentImageSource"],
+  ],
+  [
+    "DELETE /v1/environment-image-sources/{sourceId}",
+    ["DeleteEnvironmentImageSource", "deleteEnvironmentImageSource"],
+  ],
+  [
+    "GET /v1/environment-image-sources/{sourceId}/repositories",
+    ["ListEnvironmentImageRepositories", "listEnvironmentImageRepositories"],
+  ],
+  [
+    "GET /v1/environment-image-sources/{sourceId}/tags",
+    ["ListEnvironmentImageTags", "listEnvironmentImageTags"],
+  ],
+  [
+    "POST /v1/environments/{environmentId}/sidecars/{sidecarId}/image/retry",
+    ["RetrySidecarImage", "retrySidecarImage"],
+  ],
+  [
     "GET /v1/environments/{environmentId}/sidecars/{sidecarId}/diagnostics",
     ["GetSidecarDiagnostics", "sidecarDiagnostics"],
   ],
@@ -205,27 +233,22 @@ const browserOperations = new Map([
 const mismatches = [];
 const schemas = document.components?.schemas ?? {};
 for (const [name, properties] of [
-  [
-    "CreateTaskRequest",
-    ["environmentIds", "defaultDnsEnvironmentId", "environmentRepair"],
-  ],
-  ["SendMessageRequest", ["environmentRepair"]],
+  ["CreateTaskRequest", ["environmentIds", "defaultDnsEnvironmentId"]],
   [
     "EnvironmentDefinitionRequest",
     ["name", "description", "sidecars", "authorizeService"],
   ],
   [
     "SidecarDefinitionRequest",
-    [
-      "templateId",
-      "templateRevision",
-      "imageDigest",
-      "secretReferences",
-      "command",
-      "initializeCommand",
-      "readiness",
-    ],
+    ["image", "secretReferences", "command", "initializeCommand", "readiness"],
   ],
+  ["SidecarImageRequest", ["kind", "reference", "sourceId"]],
+  [
+    "EnvironmentImageSourceRequest",
+    ["name", "registryHost", "username", "credentialEntryId"],
+  ],
+  ["EnvironmentImageSourceView", ["id", "workspaceId", "generation"]],
+  ["SidecarView", ["image", "imageStatus", "imageFailureCode"]],
   [
     "TaskEnvironmentAttachmentView",
     ["desiredMembership", "connectivity", "connectionBindings"],
@@ -239,6 +262,7 @@ for (const name of [
   "UpdateEnvironmentRequest",
   "EnvironmentActionRequest",
   "SetEnvironmentDnsDefaultRequest",
+  "UpdateEnvironmentImageSourceRequest",
 ])
   if (
     !schemas[name]?.required?.includes("expectedGeneration") ||
@@ -269,6 +293,20 @@ if (
 )
   mismatches.push(
     "Environment definitions must expose secretReferences rather than plaintext launch environment values",
+  );
+for (const property of [
+  "templateId",
+  "templateRevision",
+  "imageDigest",
+  "architecture",
+])
+  if (schemas.SidecarDefinitionRequest?.properties?.[property])
+    mismatches.push(
+      `SidecarDefinitionRequest.${property}: internal image mechanic must not be a public input`,
+    );
+if (schemas.EnvironmentImageSourceRequest?.properties?.secret)
+  mismatches.push(
+    "Registry sources must reference existing Vault secrets rather than accept secret values",
   );
 for (const [route, operation] of browserOperations) {
   if (actual.get(route) !== operation)

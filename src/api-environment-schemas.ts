@@ -28,6 +28,38 @@ export const sidecarReadinessRequestSchema = z
         message: "Command readiness requires a command.",
       });
   });
+export const sidecarImageSchema = z
+  .strictObject({
+    kind: z.enum(["registry", "archive"]),
+    reference: z.string().trim().min(1).max(2048),
+    sourceId: z.guid().nullable().optional(),
+  })
+  .superRefine((image, context) => {
+    if (image.kind === "archive") {
+      let url: URL;
+      try {
+        url = new URL(image.reference);
+      } catch {
+        context.addIssue({
+          code: "custom",
+          message: "Enter an HTTPS container archive URL.",
+        });
+        return;
+      }
+      if (
+        url.protocol !== "https:" ||
+        url.username ||
+        url.password ||
+        url.hash ||
+        image.sourceId
+      )
+        context.addIssue({
+          code: "custom",
+          message:
+            "Container archives require an HTTPS URL without registry credentials.",
+        });
+    }
+  });
 export const sidecarDefinitionRequestSchema = z.strictObject({
   id: z.guid().nullable(),
   label: z
@@ -43,14 +75,7 @@ export const sidecarDefinitionRequestSchema = z.strictObject({
     .min(1)
     .max(128)
     .refine((value) => Boolean(value.trim())),
-  templateId: z
-    .string()
-    .min(1)
-    .max(128)
-    .refine((value) => Boolean(value.trim())),
-  templateRevision: generation,
-  imageDigest: z.string().regex(/^sha256:[0-9a-f]{64}$/),
-  architecture: z.enum(["x86_64", "aarch64"]),
+  image: sidecarImageSchema,
   cpuCores: z.number().int().min(1).max(32),
   memoryMiB: z
     .number()
@@ -100,10 +125,9 @@ const sidecarViewSchema = z.looseObject({
   id: z.guid(),
   label: z.string(),
   name: z.string(),
-  templateId: z.string(),
-  templateRevision: generation,
-  imageDigest: z.string(),
-  architecture: z.string(),
+  image: sidecarImageSchema,
+  imageStatus: z.string(),
+  imageFailureCode: z.string().nullable(),
   cpuCores: z.number().int().min(1).max(32),
   memoryMiB: z
     .number()
@@ -205,3 +229,19 @@ export const sidecarDiagnosticsSchema = z.looseObject({
     })
     .nullable(),
 });
+
+export const environmentImageSourceRequestSchema = z.strictObject({
+  name: z.string().trim().min(1).max(128),
+  registryHost: z.string().trim().min(1).max(300),
+  username: z.string().trim().min(1).max(300),
+  credentialEntryId: z.guid(),
+});
+export const environmentImageSourceSchema = z.looseObject({
+  ...environmentImageSourceRequestSchema.shape,
+  id: z.guid(),
+  workspaceId: z.guid(),
+  generation,
+});
+export type EnvironmentImageSourceRequest = z.infer<
+  typeof environmentImageSourceRequestSchema
+>;

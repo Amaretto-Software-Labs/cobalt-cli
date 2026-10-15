@@ -528,7 +528,6 @@ export function createProgram(runtime: Runtime): Command {
         taskId,
         {
           message: await readMessage(options),
-          ...(options.environmentRepair ? { environmentRepair: true } : {}),
           ...(options.role ? { roleKey: options.role } : {}),
           ...(hasAgentSelection(options)
             ? {
@@ -1048,15 +1047,11 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
     .option("--repo <repository...>")
     .option(
       "--attach-environment <uuid...>",
-      "Environment UUIDs required before task admission.",
+      "Environment UUID to attach to the task.",
     )
     .option(
       "--default-dns-environment <uuid>",
       "Explicit default among selected environments.",
-    )
-    .option(
-      "--environment-repair",
-      "Repair unavailable environments before admission.",
     )
     .option("--active-repo <repository>")
     .option("--branch <branch>")
@@ -1155,7 +1150,6 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
         );
         const request = {
           message: await readMessage(options),
-          ...(options.environmentRepair ? { environmentRepair: true } : {}),
           ...(options.role ? { roleKey: options.role } : {}),
           agent,
           title: options.title ?? null,
@@ -1216,10 +1210,6 @@ function addMessageMutation(
 ): void {
   task
     .command(`${name} <task-id>`)
-    .option(
-      "--environment-repair",
-      "Repair unavailable environment dependencies before admission.",
-    )
     .option("--role <key>")
     .option("--agent <agent>")
     .option("--model <model>")
@@ -1510,7 +1500,6 @@ interface AgentOptions {
   reasoning?: string;
 }
 interface MessageOptions {
-  environmentRepair?: boolean;
   role?: string;
   message?: string;
   messageFile?: string;
@@ -1671,7 +1660,7 @@ _cobalt() {
     auth) _values action login logout status;;
     workspace) _values action list use current;;
     repo|agent) _values action list;;
-    environment) _values action list get create update start stop restart delete revoke-service operation sidecar;;
+    environment) _values action list get create update start stop restart delete revoke-service operation sidecar image-source;;
     pr-gate) _values action list configure action;;
     task) _values action environment list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open;;
     loop) _values action list get create update enable disable delete run rerun runs decisions lanes descriptors preview;;
@@ -1687,7 +1676,7 @@ complete -c cobalt -n '__fish_use_subcommand' -a 'interactive auth workspace rep
 complete -c cobalt -n '__fish_seen_subcommand_from auth' -a 'login logout status'
 complete -c cobalt -n '__fish_seen_subcommand_from workspace' -a 'list use current'
 complete -c cobalt -n '__fish_seen_subcommand_from repo agent' -a 'list'
-complete -c cobalt -n '__fish_seen_subcommand_from environment' -a 'list get create update start stop restart delete revoke-service operation sidecar'
+complete -c cobalt -n '__fish_seen_subcommand_from environment' -a 'list get create update start stop restart delete revoke-service operation sidecar image-source'
 complete -c cobalt -n '__fish_seen_subcommand_from pr-gate' -a 'list configure action'
 complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'environment list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open'
 complete -c cobalt -n '__fish_seen_subcommand_from loop' -a 'list get create update enable disable delete run rerun runs decisions lanes descriptors preview'
@@ -1696,7 +1685,7 @@ complete -c cobalt -l environment -a 'prod dev demo local'`;
   if (shell === "powershell")
     return `Register-ArgumentCompleter -Native -CommandName cobalt -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $words = @('interactive','auth','workspace','repo','agent','task','environment','pr-gate','sidecar','attach','detach','dns-default','operation','start','stop','restart','revoke-service','configure','action','loop','role','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','auto-wake','queue','hold','release','retry','move','update','enable','disable','run','rerun','schedules','preview','descriptors','runs','decisions','lanes','prod','dev','demo','local','bash','zsh','fish','powershell')
+  $words = @('interactive','auth','workspace','repo','agent','task','environment','pr-gate','sidecar','image-source','retry-image','repositories','tags','attach','detach','dns-default','operation','start','stop','restart','revoke-service','configure','action','loop','role','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','auto-wake','queue','hold','release','retry','move','update','enable','disable','run','rerun','schedules','preview','descriptors','runs','decisions','lanes','prod','dev','demo','local','bash','zsh','fish','powershell')
   $words | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { [System.Management.Automation.CompletionResult]::new($_,$_, 'ParameterValue', $_) }
 }`;
   return undefined;

@@ -51,10 +51,10 @@ const sidecar = {
   id: null,
   label: "db",
   name: "Database",
-  templateId: "certified-db",
-  templateRevision: 1,
-  imageDigest: "sha256:" + "a".repeat(64),
-  architecture: "x86_64" as const,
+  image: {
+    kind: "registry" as const,
+    reference: "docker.io/library/postgres:17",
+  },
   cpuCores: 2,
   memoryMiB: 4096,
   rootDiskGiB: 10,
@@ -293,7 +293,7 @@ describe("workspace environment command contracts", () => {
       );
     },
   );
-  it("attaches without waking directly and preserves explicit repair and bindings", async () => {
+  it("attaches without waking directly and preserves explicit bindings", async () => {
     const attachTaskEnvironment = vi.fn(accepted);
     const { runtime } = setup({ attachTaskEnvironment });
     const bindings = { DATABASE_HOST: "db" };
@@ -304,7 +304,6 @@ describe("workspace environment command contracts", () => {
         "attach",
         task,
         environment,
-        "--repair",
         "--bindings-file",
         await file(bindings),
         "--idempotency-key",
@@ -314,7 +313,6 @@ describe("workspace environment command contracts", () => {
     expect(attachTaskEnvironment).toHaveBeenCalledWith(
       task,
       environment,
-      true,
       bindings,
       key,
     );
@@ -376,7 +374,7 @@ describe("workspace environment command contracts", () => {
       key,
     );
   });
-  it("creates a task with multiple environments, explicit default and repair", async () => {
+  it("creates a task with an environment and explicit default", async () => {
     const createTask = vi.fn(accepted);
     const listAgents = vi.fn(async () => ({
       items: [
@@ -402,7 +400,6 @@ describe("workspace environment command contracts", () => {
         attachment,
         "--default-dns-environment",
         attachment,
-        "--environment-repair",
         "--idempotency-key",
         key,
       ]),
@@ -412,7 +409,6 @@ describe("workspace environment command contracts", () => {
       expect.objectContaining({
         environmentIds: [environment, attachment],
         defaultDnsEnvironmentId: attachment,
-        environmentRepair: true,
       }),
       key,
     );
@@ -436,7 +432,7 @@ describe("workspace environment command contracts", () => {
       ).toBe(2);
     expect(createTask).not.toHaveBeenCalled();
   });
-  it("repairs environment dependencies on send only when requested", async () => {
+  it("sends normally for a task with environment attachments", async () => {
     const sendMessage = vi.fn(accepted);
     const { runtime } = setup({ sendMessage });
     expect(
@@ -446,16 +442,11 @@ describe("workspace environment command contracts", () => {
         task,
         "--message",
         "hello",
-        "--environment-repair",
         "--idempotency-key",
         key,
       ]),
     ).toBe(0);
-    expect(sendMessage).toHaveBeenCalledWith(
-      task,
-      { message: "hello", environmentRepair: true },
-      key,
-    );
+    expect(sendMessage).toHaveBeenCalledWith(task, { message: "hello" }, key);
   });
 });
 

@@ -1,4 +1,7 @@
 import {
+  environmentImageSourceRequestSchema,
+  environmentImageSourceSchema,
+  type EnvironmentImageSourceRequest,
   sidecarDiagnosticsSchema,
   environmentViewSchema,
   environmentOperationSchema,
@@ -328,6 +331,95 @@ export class CobaltApiClient {
       environmentOperationSchema,
     );
   }
+  public listEnvironmentImageSources(workspaceId: string) {
+    return this.request(
+      "GET",
+      `workspaces/${validId(workspaceId)}/environment-image-sources`,
+      z.array(environmentImageSourceSchema),
+    );
+  }
+  public createEnvironmentImageSource(
+    workspaceId: string,
+    source: EnvironmentImageSourceRequest,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/environment-image-sources`,
+      environmentImageSourceRequestSchema.parse(source),
+      key,
+      environmentImageSourceSchema,
+    );
+  }
+  public updateEnvironmentImageSource(
+    sourceId: string,
+    source: EnvironmentImageSourceRequest,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environment-image-sources/${validId(sourceId)}`,
+      {
+        source: environmentImageSourceRequestSchema.parse(source),
+        expectedGeneration: validGeneration(expectedGeneration),
+      },
+      key,
+      environmentImageSourceSchema,
+      undefined,
+      "PUT",
+    );
+  }
+  public deleteEnvironmentImageSource(
+    sourceId: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environment-image-sources/${validId(sourceId)}?expectedGeneration=${validGeneration(expectedGeneration)}`,
+      undefined,
+      key,
+      z.looseObject({ id: z.guid() }),
+      undefined,
+      "DELETE",
+    );
+  }
+  public listEnvironmentImageRepositories(sourceId: string, cursor?: string) {
+    return this.request(
+      "GET",
+      `environment-image-sources/${validId(sourceId)}/repositories${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+      z.looseObject({
+        supported: z.boolean(),
+        repositories: z.array(z.string()),
+        nextCursor: z.string().nullable().optional(),
+      }),
+    );
+  }
+  public listEnvironmentImageTags(
+    sourceId: string,
+    repository: string,
+    cursor?: string,
+  ) {
+    return this.request(
+      "GET",
+      `environment-image-sources/${validId(sourceId)}/tags?repository=${encodeURIComponent(repository)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      z.looseObject({
+        tags: z.array(z.string()),
+        nextCursor: z.string().nullable().optional(),
+      }),
+    );
+  }
+  public retrySidecarImage(
+    environmentId: string,
+    sidecarId: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environments/${validId(environmentId)}/sidecars/${validId(sidecarId)}/image/retry`,
+      { expectedGeneration: validGeneration(expectedGeneration) },
+      key,
+      environmentViewSchema,
+    );
+  }
   public sidecarDiagnostics(environmentId: string, sidecarId: string) {
     return this.request(
       "GET",
@@ -359,13 +451,12 @@ export class CobaltApiClient {
   public attachTaskEnvironment(
     taskId: string,
     environmentId: string,
-    repair: boolean,
     connectionBindings: Record<string, string> | undefined,
     key: string,
   ) {
     return this.mutate(
       `tasks/${validId(taskId)}/environment-attachments`,
-      { environmentId: validId(environmentId), repair, connectionBindings },
+      { environmentId: validId(environmentId), connectionBindings },
       key,
       taskEnvironmentAttachmentSchema,
     );

@@ -58,7 +58,8 @@ task send|steer|cancel|suspend|resume|auto-wake|delete|wait|follow|open
 task queue list|hold|release|cancel|retry|move
 task environment list|attach|detach|dns-default
 environment list|get|create|update|start|stop|restart|delete|revoke-service|operation
-environment sidecar diagnostics|restart|delete
+environment sidecar diagnostics|restart|delete|retry-image
+environment image-source list|create|update|delete|repositories|tags
 pr-gate list|configure|action
 loop list|get|create|update|enable|disable|delete|run|rerun
 loop runs|decisions|lanes|descriptors|preview
@@ -168,7 +169,7 @@ Computer availability is automatic: Borealis suspends idle VMs and activates the
 
 `environment` manages persistent workspace resources. The global
 `--environment` option still selects the API deployment. Create and update use a
-complete JSON definition with certified template identity, launch commands,
+complete JSON definition with a container image selection, launch commands,
 readiness and `secretReferences` mapping variable names to saved secret UUIDs.
 Plaintext launch secrets are not accepted in definitions.
 
@@ -184,13 +185,13 @@ cobalt environment sidecar diagnostics <environment-id> <sidecar-id>
 
 cobalt task create --message "Run the integration tests" \
   --attach-environment <database-environment-id> <cache-environment-id> \
-  --default-dns-environment <database-environment-id> --environment-repair
+  --default-dns-environment <database-environment-id>
 cobalt task environment list <task-id> --json
-cobalt task environment attach <task-id> <environment-id> --repair
+cobalt task environment attach <task-id> <environment-id>
 cobalt task environment dns-default <task-id> --attachment <attachment-id> --expected-generation 3
 cobalt task environment dns-default <task-id> --clear --expected-generation 4
 cobalt task environment detach <task-id> <attachment-id> --expected-generation 2
-cobalt task send <task-id> --message "Retry with the database repaired" --environment-repair
+cobalt task send <task-id> --message "Retry with the database repaired"
 ```
 
 Environment power actions are `start`, `stop`, `restart`, `delete` and
@@ -201,3 +202,18 @@ remain recorded while its task is suspended. Inspect connectivity separately
 before relying on live access. `--bindings-file` accepts a JSON map of
 application variable names to sidecar DNS labels, for example
 `{"DATABASE_HOST":"db"}`. Cobalt resolves each label to its qualified private host.
+
+### Sidecar container images
+
+Sidecar definitions use `image: { "kind": "registry", "reference": "docker.io/library/postgres:17" }`, or `kind: "archive"` with a direct HTTPS OCI/Docker image archive URL. Cobalt resolves and prepares the runtime image; template IDs, digests and architecture are not request fields. Existing sidecar disks remain pinned after allocation.
+
+For private registries, create a workspace source referencing an existing Vault secret, then set its `sourceId` in the sidecar image:
+
+```bash
+cobalt environment image-source create --name GHCR --registry ghcr.io --username builder --credential-entry <vault-entry-id>
+cobalt environment image-source repositories <source-id>
+cobalt environment image-source tags <source-id> team/database
+cobalt environment sidecar retry-image <environment-id> <sidecar-id> --expected-generation 3
+```
+
+Image preparation status is separate from service readiness. An accepted create does not mean the image, sidecar or task is running. Retry uncertain mutations with the same `--idempotency-key`.
