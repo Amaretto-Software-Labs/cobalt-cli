@@ -56,6 +56,11 @@ agent list
 task list|get|search|create|messages|message-search|events
 task send|steer|cancel|suspend|resume|auto-wake|delete|wait|follow|open
 task queue list|hold|release|cancel|retry|move
+task environment list|attach|detach|dns-default
+environment list|get|create|update|start|stop|restart|delete|revoke-service|operation
+environment sidecar diagnostics|restart|delete|retry-image
+environment image-source list|create|update|delete|repositories|tags
+pr-gate list|configure|action
 loop list|get|create|update|enable|disable|delete|run|rerun
 loop runs|decisions|lanes|descriptors|preview
 role list|get|create|update|delete
@@ -159,3 +164,56 @@ Please report vulnerabilities privately through GitHub Security Advisories. Do n
 Apache-2.0.
 
 Computer availability is automatic: Borealis suspends idle VMs and activates them for prompts, commands and previews. There is no task auto-suspend option. Workspace concurrency counts active agent turns or commands.
+
+## Workspace environments and sidecars
+
+`environment` manages persistent workspace resources. The global
+`--environment` option still selects the API deployment. Create and update use a
+complete JSON definition with a container image selection, launch commands,
+readiness and `secretReferences` mapping variable names to saved secret UUIDs.
+Plaintext launch secrets are not accepted in definitions.
+
+```bash
+cobalt environment list --json
+cobalt environment create --definition-file database.json
+cobalt environment get <environment-id> --json
+cobalt environment update <environment-id> --definition-file database.json --expected-generation 3
+cobalt environment start <environment-id> --expected-generation 4
+cobalt environment operation <operation-id> --wait --timeout 300 --json
+cobalt environment sidecar restart <environment-id> <sidecar-id> --expected-generation 5
+cobalt environment sidecar diagnostics <environment-id> <sidecar-id>
+
+cobalt task create --message "Run the integration tests" \
+  --attach-environment <database-environment-id> <cache-environment-id> \
+  --default-dns-environment <database-environment-id>
+cobalt task environment list <task-id> --json
+cobalt task environment attach <task-id> <environment-id>
+cobalt task environment dns-default <task-id> --attachment <attachment-id> --expected-generation 3
+cobalt task environment dns-default <task-id> --clear --expected-generation 4
+cobalt task environment detach <task-id> <attachment-id> --expected-generation 2
+cobalt task send <task-id> --message "Retry with the database repaired"
+```
+
+Environment power actions are `start`, `stop`, `restart`, `delete` and
+`revoke-service`. Sidecar actions are `restart` and `delete`. Mutations require
+the observed resource generation where applicable; use the same explicit
+`--idempotency-key` when retrying an uncertain result. A durable attachment can
+remain recorded while its task is suspended. Inspect connectivity separately
+before relying on live access. `--bindings-file` accepts a JSON map of
+application variable names to sidecar DNS labels, for example
+`{"DATABASE_HOST":"db"}`. Cobalt resolves each label to its qualified private host.
+
+### Sidecar container images
+
+Sidecar definitions use `image: { "kind": "registry", "reference": "docker.io/library/postgres:17" }`, or `kind: "archive"` with a direct HTTPS OCI/Docker image archive URL. Cobalt resolves and prepares the runtime image; template IDs, digests and architecture are not request fields. Existing sidecar disks remain pinned after allocation.
+
+For private registries, create a workspace source referencing an existing Vault secret, then set its `sourceId` in the sidecar image:
+
+```bash
+cobalt environment image-source create --name GHCR --registry ghcr.io --username builder --credential-entry <vault-entry-id>
+cobalt environment image-source repositories <source-id>
+cobalt environment image-source tags <source-id> team/database
+cobalt environment sidecar retry-image <environment-id> <sidecar-id> --expected-generation 3
+```
+
+Image preparation status is separate from service readiness. An accepted create does not mean the image, sidecar or task is running. Retry uncertain mutations with the same `--idempotency-key`.

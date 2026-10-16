@@ -20,6 +20,7 @@ import {
 import { runInteractive } from "./interactive.js";
 import { isTerminalTaskStatus } from "./task-status.js";
 import { packageVersion } from "./version.js";
+import { addEnvironmentCommands } from "./environment-commands.js";
 
 const readScopes = ["cobaltcode.external.read"];
 const operateScopes = ["cobaltcode.external.operate"];
@@ -340,7 +341,94 @@ export function createProgram(runtime: Runtime): Command {
         }),
     );
 
+  const prGate = root
+    .command("pr-gate")
+    .description("Inspect and configure workspace pull-request gates.");
+  prGate
+    .command("list")
+    .option("--registration <uuid>")
+    .action(async (options: { registration?: string }, command) =>
+      execute(runtime, command, readScopes, true, async (context) =>
+        context.output.result(
+          "prGate",
+          await context.api.inspectPrGates(
+            context.requireWorkspace(),
+            options.registration,
+          ),
+        ),
+      ),
+    );
+  prGate
+    .command("configure")
+    .requiredOption("--repository <uuid>")
+    .requiredOption("--connection <uuid>")
+    .requiredOption("--branch <name>")
+    .requiredOption("--loops <uuid...>")
+    .action(
+      async (
+        options: {
+          repository: string;
+          connection: string;
+          branch: string;
+          loops: string[];
+        },
+        command,
+      ) =>
+        mutation(
+          runtime,
+          command,
+          (context, key) => {
+            if (!options.branch.trim())
+              throw new UsageError("--branch must not be empty.");
+            const loopIds = options.loops.map(validId);
+            if (new Set(loopIds).size !== loopIds.length)
+              throw new UsageError("--loops must identify unique Loop UUIDs.");
+            return context.api.configurePrGate(
+              context.requireWorkspace(),
+              {
+                repositoryId: options.repository,
+                connectionId: options.connection,
+                branch: options.branch,
+                loopIds,
+              },
+              key,
+            );
+          },
+          "prGate",
+        ),
+    );
+  prGate
+    .command("action <registration-id> <action>")
+    .option("--evaluation <uuid>")
+    .action(
+      async (
+        registrationId: string,
+        action: string,
+        options: { evaluation?: string },
+        command,
+      ) =>
+        mutation(
+          runtime,
+          command,
+          (context, key) =>
+            context.api.prGateAction(
+              context.requireWorkspace(),
+              registrationId,
+              action,
+              options.evaluation,
+              key,
+            ),
+          "prGate",
+        ),
+    );
+
   addTaskCreate(task, runtime);
+  addEnvironmentCommands(root, task, {
+    execute: (command, scopes, action) =>
+      execute(runtime, command, scopes, true, action),
+    mutationKey,
+    readDefinitionFile,
+  });
   addProcessCommands(root, runtime);
   const queue = task
     .command("queue")
@@ -957,6 +1045,14 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
     .option("--visibility <visibility>", "", "workspace")
     .option("--retention <retention>", "", "ephemeral")
     .option("--repo <repository...>")
+    .option(
+      "--attach-environment <uuid...>",
+      "Environment UUID to attach to the task.",
+    )
+    .option(
+      "--default-dns-environment <uuid>",
+      "Explicit default among selected environments.",
+    )
     .option("--active-repo <repository>")
     .option("--branch <branch>")
     .option("--pull-request <number>", "Existing PR number.", parsePositive)
@@ -981,6 +1077,21 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
           throw new UsageError("--visibility must be workspace or private.");
         if (!["ephemeral", "persistent"].includes(options.retention))
           throw new UsageError("--retention must be ephemeral or persistent.");
+        const environmentIds = (options.attachEnvironment ?? []).map(validId);
+        if (new Set(environmentIds).size !== environmentIds.length)
+          throw new UsageError(
+            "Each --attach-environment UUID must be unique.",
+          );
+        const defaultDnsEnvironmentId = options.defaultDnsEnvironment
+          ? validId(options.defaultDnsEnvironment)
+          : undefined;
+        if (
+          defaultDnsEnvironmentId &&
+          !environmentIds.includes(defaultDnsEnvironmentId)
+        )
+          throw new UsageError(
+            "--default-dns-environment must identify a selected --attach-environment.",
+          );
         const repoValues = options.repo ?? [];
         if (repoValues.some((value) => !value.trim()))
           throw new UsageError("--repo values must not be empty.");
@@ -1044,6 +1155,8 @@ function addTaskCreate(task: Command, runtime: Runtime): void {
           title: options.title ?? null,
           visibility: options.visibility,
           retentionMode: options.retention,
+          ...(environmentIds.length ? { environmentIds } : {}),
+          ...(defaultDnsEnvironmentId ? { defaultDnsEnvironmentId } : {}),
           autoWakeOnResume: options.autoWake,
           ...(options.onHold ? { createOnHold: true } : {}),
           ...(options.defaultRole
@@ -1397,6 +1510,8 @@ interface CreateOptions extends AgentOptions, MessageOptions {
   visibility: string;
   retention: string;
   repo?: string[];
+  attachEnvironment?: string[];
+  defaultDnsEnvironment?: string;
   activeRepo?: string;
   branch?: string;
   pullRequest?: number;
@@ -1526,7 +1641,7 @@ function parseDuration(value: string): number {
 function completion(shell: string): string | undefined {
   if (shell === "bash")
     return `_cobalt_complete() {
-  local commands="interactive auth workspace repo agent task loop role completion version"
+  local commands="interactive auth workspace repo agent task environment pr-gate loop role completion version"
   local auth="login logout status" workspace="list use current" repo="list" agent="list"
   local task="list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open"
   local loop="list get create update enable disable delete run rerun runs decisions lanes descriptors preview" role="list get create update delete"
@@ -1539,13 +1654,15 @@ complete -F _cobalt_complete cobalt`;
     return `#compdef cobalt
 _cobalt() {
   local -a commands
-  commands=(interactive auth workspace repo agent task loop role completion version)
+  commands=(interactive auth workspace repo agent task environment pr-gate loop role completion version)
   if (( CURRENT == 2 )); then _describe command commands; return; fi
   case $words[2] in
     auth) _values action login logout status;;
     workspace) _values action list use current;;
     repo|agent) _values action list;;
-    task) _values action list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open;;
+    environment) _values action list get create update start stop restart delete revoke-service operation sidecar image-source;;
+    pr-gate) _values action list configure action;;
+    task) _values action environment list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open;;
     loop) _values action list get create update enable disable delete run rerun runs decisions lanes descriptors preview;;
     role) _values action list get create update delete;;
     completion) _values shell bash zsh fish powershell;;
@@ -1555,18 +1672,20 @@ _cobalt() {
 compdef _cobalt cobalt`;
   if (shell === "fish")
     return `complete -c cobalt -f
-complete -c cobalt -n '__fish_use_subcommand' -a 'interactive auth workspace repo agent task loop role completion version'
+complete -c cobalt -n '__fish_use_subcommand' -a 'interactive auth workspace repo agent task environment pr-gate loop role completion version'
 complete -c cobalt -n '__fish_seen_subcommand_from auth' -a 'login logout status'
 complete -c cobalt -n '__fish_seen_subcommand_from workspace' -a 'list use current'
 complete -c cobalt -n '__fish_seen_subcommand_from repo agent' -a 'list'
-complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open'
+complete -c cobalt -n '__fish_seen_subcommand_from environment' -a 'list get create update start stop restart delete revoke-service operation sidecar image-source'
+complete -c cobalt -n '__fish_seen_subcommand_from pr-gate' -a 'list configure action'
+complete -c cobalt -n '__fish_seen_subcommand_from task' -a 'environment list get search create messages message-search events send steer cancel suspend resume auto-wake queue delete wait follow open'
 complete -c cobalt -n '__fish_seen_subcommand_from loop' -a 'list get create update enable disable delete run rerun runs decisions lanes descriptors preview'
 complete -c cobalt -n '__fish_seen_subcommand_from role' -a 'list get create update delete'
 complete -c cobalt -l environment -a 'prod dev demo local'`;
   if (shell === "powershell")
     return `Register-ArgumentCompleter -Native -CommandName cobalt -ScriptBlock {
   param($wordToComplete, $commandAst, $cursorPosition)
-  $words = @('interactive','auth','workspace','repo','agent','task','loop','role','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','auto-wake','queue','hold','release','retry','move','update','enable','disable','run','rerun','schedules','preview','descriptors','runs','decisions','lanes','prod','dev','demo','local','bash','zsh','fish','powershell')
+  $words = @('interactive','auth','workspace','repo','agent','task','environment','pr-gate','sidecar','image-source','retry-image','repositories','tags','attach','detach','dns-default','operation','start','stop','restart','revoke-service','configure','action','loop','role','completion','version','login','logout','status','list','use','current','get','search','create','messages','message-search','events','send','steer','cancel','suspend','resume','delete','wait','follow','open','auto-wake','queue','hold','release','retry','move','update','enable','disable','run','rerun','schedules','preview','descriptors','runs','decisions','lanes','prod','dev','demo','local','bash','zsh','fish','powershell')
   $words | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object { [System.Management.Automation.CompletionResult]::new($_,$_, 'ParameterValue', $_) }
 }`;
   return undefined;

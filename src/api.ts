@@ -1,4 +1,16 @@
 import {
+  environmentImageSourceRequestSchema,
+  environmentImageSourceSchema,
+  type EnvironmentImageSourceRequest,
+  sidecarDiagnosticsSchema,
+  environmentViewSchema,
+  environmentOperationSchema,
+  taskEnvironmentAttachmentSchema,
+  taskEnvironmentAttachmentsSchema,
+  environmentDefinitionRequestSchema,
+  type EnvironmentDefinitionRequest,
+} from "./api-environment-schemas.js";
+import {
   loopSchema,
   loopDetailSchema,
   loopMutationSchema,
@@ -13,7 +25,13 @@ import { z } from "zod";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { TokenProvider } from "./auth.js";
 import type { CobaltEnvironment } from "./environment.js";
-import { ApiError, CliError, ExitCode, type ProblemDetails } from "./errors.js";
+import {
+  ApiError,
+  CliError,
+  ExitCode,
+  UsageError,
+  type ProblemDetails,
+} from "./errors.js";
 import {
   readBoundedBytes,
   ResponseReadError,
@@ -196,6 +214,289 @@ export class CobaltApiClient {
       throw new Error("External API base URL must be HTTPS and end in /v1.");
   }
 
+  public inspectPrGates(workspaceId: string, registrationId?: string) {
+    return this.request(
+      "GET",
+      withQuery(`workspaces/${validId(workspaceId)}/pr-gates`, {
+        registrationId: registrationId ? validId(registrationId) : undefined,
+      }),
+      z.looseObject({ result: z.unknown() }),
+    );
+  }
+  public configurePrGate(
+    workspaceId: string,
+    request: {
+      repositoryId: string;
+      connectionId: string;
+      branch: string;
+      loopIds: string[];
+    },
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/pr-gates`,
+      {
+        repositoryId: validId(request.repositoryId),
+        connectionId: validId(request.connectionId),
+        branch: request.branch,
+        loopIds: request.loopIds.map(validId),
+      },
+      key,
+      z.looseObject({ result: z.unknown() }),
+      undefined,
+      "PUT",
+    );
+  }
+  public prGateAction(
+    workspaceId: string,
+    registrationId: string,
+    action: string,
+    evaluationId: string | undefined,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/pr-gates/${validId(registrationId)}/actions`,
+      {
+        action,
+        ...(evaluationId ? { evaluationId: validId(evaluationId) } : {}),
+      },
+      key,
+      z.looseObject({ result: z.unknown() }),
+    );
+  }
+
+  public listEnvironments(workspaceId: string) {
+    return this.request(
+      "GET",
+      `workspaces/${validId(workspaceId)}/environments`,
+      z.array(environmentViewSchema),
+    );
+  }
+  public getEnvironment(environmentId: string) {
+    return this.request(
+      "GET",
+      `environments/${validId(environmentId)}`,
+      environmentViewSchema,
+    );
+  }
+  public getEnvironmentOperation(operationId: string, signal?: AbortSignal) {
+    return this.request(
+      "GET",
+      `environment-operations/${validId(operationId)}`,
+      environmentOperationSchema,
+      undefined,
+      signal,
+    );
+  }
+  public createEnvironment(
+    workspaceId: string,
+    definition: EnvironmentDefinitionRequest,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/environments`,
+      environmentDefinitionRequestSchema.parse(definition),
+      key,
+      environmentViewSchema,
+    );
+  }
+  public updateEnvironment(
+    environmentId: string,
+    definition: EnvironmentDefinitionRequest,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environments/${validId(environmentId)}`,
+      {
+        definition: environmentDefinitionRequestSchema.parse(definition),
+        expectedGeneration: validGeneration(expectedGeneration),
+      },
+      key,
+      environmentViewSchema,
+      undefined,
+      "PUT",
+    );
+  }
+  public environmentAction(
+    environmentId: string,
+    action: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environments/${validId(environmentId)}/actions/${encodeURIComponent(action)}`,
+      { expectedGeneration: validGeneration(expectedGeneration) },
+      key,
+      environmentOperationSchema,
+    );
+  }
+  public listEnvironmentImageSources(workspaceId: string) {
+    return this.request(
+      "GET",
+      `workspaces/${validId(workspaceId)}/environment-image-sources`,
+      z.array(environmentImageSourceSchema),
+    );
+  }
+  public createEnvironmentImageSource(
+    workspaceId: string,
+    source: EnvironmentImageSourceRequest,
+    key: string,
+  ) {
+    return this.mutate(
+      `workspaces/${validId(workspaceId)}/environment-image-sources`,
+      environmentImageSourceRequestSchema.parse(source),
+      key,
+      environmentImageSourceSchema,
+    );
+  }
+  public updateEnvironmentImageSource(
+    sourceId: string,
+    source: EnvironmentImageSourceRequest,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environment-image-sources/${validId(sourceId)}`,
+      {
+        source: environmentImageSourceRequestSchema.parse(source),
+        expectedGeneration: validGeneration(expectedGeneration),
+      },
+      key,
+      environmentImageSourceSchema,
+      undefined,
+      "PUT",
+    );
+  }
+  public deleteEnvironmentImageSource(
+    sourceId: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environment-image-sources/${validId(sourceId)}?expectedGeneration=${validGeneration(expectedGeneration)}`,
+      undefined,
+      key,
+      z.looseObject({ id: z.guid() }),
+      undefined,
+      "DELETE",
+    );
+  }
+  public listEnvironmentImageRepositories(sourceId: string, cursor?: string) {
+    return this.request(
+      "GET",
+      `environment-image-sources/${validId(sourceId)}/repositories${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+      z.looseObject({
+        supported: z.boolean(),
+        repositories: z.array(z.string()),
+        nextCursor: z.string().nullable().optional(),
+      }),
+    );
+  }
+  public listEnvironmentImageTags(
+    sourceId: string,
+    repository: string,
+    cursor?: string,
+  ) {
+    return this.request(
+      "GET",
+      `environment-image-sources/${validId(sourceId)}/tags?repository=${encodeURIComponent(repository)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`,
+      z.looseObject({
+        tags: z.array(z.string()),
+        nextCursor: z.string().nullable().optional(),
+      }),
+    );
+  }
+  public retrySidecarImage(
+    environmentId: string,
+    sidecarId: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environments/${validId(environmentId)}/sidecars/${validId(sidecarId)}/image/retry`,
+      { expectedGeneration: validGeneration(expectedGeneration) },
+      key,
+      environmentViewSchema,
+    );
+  }
+  public sidecarDiagnostics(environmentId: string, sidecarId: string) {
+    return this.request(
+      "GET",
+      `environments/${validId(environmentId)}/sidecars/${validId(sidecarId)}/diagnostics`,
+      sidecarDiagnosticsSchema,
+    );
+  }
+  public sidecarAction(
+    environmentId: string,
+    sidecarId: string,
+    action: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `environments/${validId(environmentId)}/sidecars/${validId(sidecarId)}/actions/${encodeURIComponent(action)}`,
+      { expectedGeneration: validGeneration(expectedGeneration) },
+      key,
+      environmentOperationSchema,
+    );
+  }
+  public listTaskEnvironmentAttachments(taskId: string) {
+    return this.request(
+      "GET",
+      `tasks/${validId(taskId)}/environment-attachments`,
+      taskEnvironmentAttachmentsSchema,
+    );
+  }
+  public attachTaskEnvironment(
+    taskId: string,
+    environmentId: string,
+    connectionBindings: Record<string, string> | undefined,
+    key: string,
+  ) {
+    return this.mutate(
+      `tasks/${validId(taskId)}/environment-attachments`,
+      { environmentId: validId(environmentId), connectionBindings },
+      key,
+      taskEnvironmentAttachmentSchema,
+    );
+  }
+  public detachTaskEnvironment(
+    taskId: string,
+    attachmentId: string,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      withQuery(
+        `tasks/${validId(taskId)}/environment-attachments/${validId(attachmentId)}`,
+        { expectedGeneration: validGeneration(expectedGeneration) },
+      ),
+      undefined,
+      key,
+      taskEnvironmentAttachmentSchema,
+      undefined,
+      "DELETE",
+    );
+  }
+  public setTaskEnvironmentDnsDefault(
+    taskId: string,
+    attachmentId: string | null,
+    expectedGeneration: number,
+    key: string,
+  ) {
+    return this.mutate(
+      `tasks/${validId(taskId)}/environment-dns-default`,
+      {
+        attachmentId: attachmentId === null ? null : validId(attachmentId),
+        expectedGeneration: validGeneration(expectedGeneration),
+      },
+      key,
+      taskEnvironmentAttachmentsSchema,
+      undefined,
+      "PUT",
+    );
+  }
   public listTaskQueue(workspaceId: string, cursor?: string) {
     return this.request(
       "GET",
@@ -949,4 +1250,12 @@ function validRoleKey(value: string): string {
   if (!/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(value))
     throw new CliError("Invalid worker role key.", ExitCode.usage);
   return encodeURIComponent(value);
+}
+
+function validGeneration(value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1)
+    throw new UsageError(
+      "Expected generation must be an exact positive integer.",
+    );
+  return value;
 }
